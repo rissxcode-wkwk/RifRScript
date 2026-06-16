@@ -6,7 +6,7 @@
 --   • [NEW] Klik Header untuk Collapse/Expand UI
 --   • [NEW] Label penghitung isi Inventory (Backpack + Character Tools)
 --   • [NEW] Layout & Scale yang lebih rapi dan proporsional
---   • [FIX] Bisa dinyalakan kembali secara manual walaupun sempat dimatikan sistem
+--   • [FIX] Smart Override: Bisa dinyalakan manual tanpa langsung dimatikan sistem (mencegah konflik delay UI)
 
 local Players      = game:GetService("Players")
 local UIS          = game:GetService("UserInputService")
@@ -19,6 +19,7 @@ local AutoHarvest    = false
 local HarvestDelay   = 0.2
 local TotalHarvested = 0
 local InventoryFull  = false
+local ManualOverride = false -- [NEW] Flag untuk izin menyalakan paksa
 local isCollapsed    = false
 
 -- ╔══════════════════════════════════════════════╗
@@ -33,16 +34,13 @@ local C = {
 	BORDER       = Color3.fromRGB(40, 50,  65),
 	BORDER_GLOW  = Color3.fromRGB(0, 210, 100),
 
-	-- Green (active)
 	GREEN        = Color3.fromRGB(0, 220, 100),
 	GREEN_DIM    = Color3.fromRGB(0,  70,  35),
 	GREEN_MID    = Color3.fromRGB(0, 150,  70),
 
-	-- Red (inactive / warning)
 	RED          = Color3.fromRGB(230, 55, 55),
 	RED_DIM      = Color3.fromRGB(80,  20, 20),
 
-	-- Amber (inventory full warning / inventory count)
 	AMBER        = Color3.fromRGB(255, 185, 30),
 	AMBER_DIM    = Color3.fromRGB(80,  55,  5),
 
@@ -119,13 +117,13 @@ Gui.Parent = Player:WaitForChild("PlayerGui")
 -- ╔══════════════════════════════════════════════╗
 -- ║               MAIN FRAME                     ║
 -- ╚══════════════════════════════════════════════╝
+
 local Frame = MakeFrame(Gui, UDim2.new(0, 280, 0, 340), UDim2.new(0.5, -140, 0.5, -170), C.BG)
 Frame.Active = true
 Frame.ClipsDescendants = true
 Corner(Frame, 16)
 local FrameStroke = Stroke(Frame, C.BORDER, 1.5)
 
--- Top accent line
 local AccentBar = MakeFrame(Frame, UDim2.new(1,0,0,2), UDim2.new(0,0,0,0), C.GREEN)
 AccentBar.ZIndex = 6
 Gradient(AccentBar, ColorSequence.new({
@@ -134,7 +132,6 @@ Gradient(AccentBar, ColorSequence.new({
 	ColorSequenceKeypoint.new(1,   Color3.fromRGB(0,140,60)),
 }), 0)
 
--- Background subtle tint
 local BgTint = MakeFrame(Frame, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0), C.BG2)
 BgTint.ZIndex = 0
 Gradient(BgTint, ColorSequence.new({
@@ -473,20 +470,19 @@ ToggleBtn.MouseLeave:Connect(function()
 	}):Play()
 end)
 
--- [FIXED] Logic tombol toggle agar bisa dinyalakan kembali
+-- [FIXED] Logic tombol toggle dengan Smart Override
 ToggleBtn.MouseButton1Click:Connect(function()
-	-- Izinkan toggle menyala/mati walaupun InventoryFull sedang true.
-	-- User mungkin sudah membersihkan inventory atau ingin memaksa (override).
 	AutoHarvest = not AutoHarvest
 	SetToggleOn(AutoHarvest)
 	
-	-- Jika user menyalakan secara manual saat status InventoryFull = true,
-	-- kita reset flag tersebut agar loop utama melakukan pengecekan ulang (re-check).
-	-- - Jika inventory MASIH penuh, sistem akan otomatis mematikannya lagi dengan aman.
-	-- - Jika inventory SUDAH dibersihkan, auto harvest akan tetap berjalan normal.
-	if AutoHarvest and InventoryFull then
+	if AutoHarvest then
+		-- User menyalakan secara manual, beri hak istimewa (override)
+		-- Ini mencegah sistem langsung mematikannya lagi karena delay UI Roblox
+		ManualOverride = true
 		InventoryFull = false
 		ShowWarning(false)
+	else
+		ManualOverride = false
 	end
 end)
 
@@ -611,23 +607,31 @@ task.spawn(function()
 
 		local isFull = CheckInventoryFull()
 
-		if isFull and not InventoryFull then    
-			InventoryFull = true    
-			if AutoHarvest then    
-				AutoHarvest = false    
-				SetToggleOn(false)    
-			end    
-			ShowWarning(true)    
-			StatusBar.Text = "⚠ STOPPED — Inventory is full!"    
-			StatusBar.TextColor3 = C.AMBER    
-		elseif not isFull and InventoryFull then    
-			InventoryFull = false    
-			ShowWarning(false)    
-			if not AutoHarvest then    
-				StatusBar.Text = "● IDLE — Inventory cleared"    
-				StatusBar.TextColor3 = C.TEXT_DARK    
-			end    
-		end    
+		-- [FIXED] Logika pengecekan yang lebih cerdas
+		if isFull then
+			-- Hanya matikan otomatis jika ini deteksi pertama kali DAN user tidak sedang memaksa (override)
+			if not InventoryFull and not ManualOverride then    
+				InventoryFull = true    
+				if AutoHarvest then    
+					AutoHarvest = false    
+					SetToggleOn(false)    
+				end    
+				ShowWarning(true)    
+				StatusBar.Text = "⚠ STOPPED — Inventory is full!"    
+				StatusBar.TextColor3 = C.AMBER    
+			end
+		else
+			-- Jika inventory sudah tidak penuh, reset semua status peringatan
+			if InventoryFull or ManualOverride then
+				InventoryFull = false
+				ManualOverride = false
+				ShowWarning(false)
+				if not AutoHarvest then    
+					StatusBar.Text = "● IDLE — Inventory cleared"    
+					StatusBar.TextColor3 = C.TEXT_DARK    
+				end
+			end
+		end
 
 		if AutoHarvest and not InventoryFull then    
 			Harvest()    
