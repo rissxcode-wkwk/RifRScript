@@ -6,6 +6,7 @@
 --   • [NEW] Klik Header untuk Collapse/Expand UI
 --   • [NEW] Label penghitung isi Inventory (Backpack + Character Tools)
 --   • [NEW] Layout & Scale yang lebih rapi dan proporsional
+--   • [FIX] Bisa dinyalakan kembali secara manual walaupun sempat dimatikan sistem
 
 local Players      = game:GetService("Players")
 local UIS          = game:GetService("UserInputService")
@@ -118,7 +119,6 @@ Gui.Parent = Player:WaitForChild("PlayerGui")
 -- ╔══════════════════════════════════════════════╗
 -- ║               MAIN FRAME                     ║
 -- ╚══════════════════════════════════════════════╝
--- Ukuran diperbesar sedikit untuk menampung 3 stat cards & animasi smooth
 local Frame = MakeFrame(Gui, UDim2.new(0, 280, 0, 340), UDim2.new(0.5, -140, 0.5, -170), C.BG)
 Frame.Active = true
 Frame.ClipsDescendants = true
@@ -149,31 +149,26 @@ Gradient(BgTint, ColorSequence.new({
 local Header = MakeFrame(Frame, UDim2.new(1,0,0,50), UDim2.new(0,0,0,2), C.BG, 1)
 Header.ZIndex = 3
 
--- Logo circle
 local LogoCircle = MakeFrame(Header, UDim2.new(0,36,0,36), UDim2.new(0,12,0.5,-18), C.GREEN_DIM)
 Corner(LogoCircle, 10)
 Stroke(LogoCircle, C.GREEN_MID, 1)
 local LogoIcon = Label(LogoCircle, "🌿", UDim2.new(1,0,1,0), UDim2.new(0,0,0,0), C.GREEN, Enum.Font.GothamBold, Enum.TextXAlignment.Center, 18)
 LogoIcon.TextScaled = true
 
--- Title
 local TitleLbl = Label(Header, "AUTO HARVEST", UDim2.new(1,-70,0,20), UDim2.new(0,56,0,8), C.TEXT, Enum.Font.GothamBold, Enum.TextXAlignment.Left, 15)
 local SubLbl   = Label(Header, "PRO FARMING UTILITY", UDim2.new(1,-70,0,14), UDim2.new(0,56,0,28), C.TEXT_DIM, Enum.Font.Gotham, Enum.TextXAlignment.Left, 10)
 
--- Version badge
 local VerBadge = MakeFrame(Header, UDim2.new(0,32,0,16), UDim2.new(1,-44,0.5,-8), Color3.fromRGB(0,60,30))
 Corner(VerBadge, 4)
 Stroke(VerBadge, C.GREEN_MID, 1)
 Label(VerBadge, "v2.1", UDim2.new(1,0,1,0), UDim2.new(0,0,0,0), C.GREEN, Enum.Font.GothamBold, Enum.TextXAlignment.Center, 9)
 
--- Status dot + ring
 local StatusDot = MakeFrame(Header, UDim2.new(0,9,0,9), UDim2.new(1,-18,0,10), C.RED)
 Corner(StatusDot, 99)
 local StatusRing = MakeFrame(Header, UDim2.new(0,9,0,9), UDim2.new(1,-18,0,10), C.BG, 1)
 Corner(StatusRing, 99)
 Stroke(StatusRing, C.RED, 1.5)
 
--- Collapse Toggle Icon
 local CollapseIcon = Label(Header, "▼", UDim2.new(0, 24, 0, 24), UDim2.new(1, -32, 0.5, -12), C.TEXT_DIM, Enum.Font.GothamBold, Enum.TextXAlignment.Center, 16)
 CollapseIcon.ZIndex = 5
 
@@ -201,7 +196,6 @@ local WarnIcon = Label(WarnBanner, "⚠", UDim2.new(0,24,1,0), UDim2.new(0,8,0,0
 WarnIcon.TextScaled = true
 local WarnText = Label(WarnBanner, "INVENTORY FULL — Harvest stopped", UDim2.new(1,-40,1,0), UDim2.new(0,34,0,0), C.AMBER, Enum.Font.GothamBold, Enum.TextXAlignment.Left, 11)
 
--- starts hidden (height = 0)
 WarnBanner.Size = UDim2.new(1,-24,0,0)
 WarnBanner.BackgroundTransparency = 1
 local warnVisible = false
@@ -210,7 +204,6 @@ local function ShowWarning(show)
 	if show == warnVisible then return end
 	warnVisible = show
 	
-	-- Auto-expand jika warning muncul saat UI sedang terlipat
 	if show and isCollapsed then
 		isCollapsed = false
 		CollapseIcon.Text = "▼"
@@ -224,7 +217,6 @@ local function ShowWarning(show)
 		BackgroundTransparency = show and 0 or 1,
 	}):Play()
 	
-	-- Shift semua elemen di bawahnya
 	TweenService:Create(Div2Ref,       TweenInfo.new(0.3, Enum.EasingStyle.Quint), { Position = UDim2.new(0,12,0,98+shift) }):Play()
 	TweenService:Create(ToggleBtnRef,  TweenInfo.new(0.3, Enum.EasingStyle.Quint), { Position = UDim2.new(0,12,0,106+shift) }):Play()
 	TweenService:Create(DelayRowRef,   TweenInfo.new(0.3, Enum.EasingStyle.Quint), { Position = UDim2.new(0,12,0,158+shift) }):Play()
@@ -232,7 +224,6 @@ local function ShowWarning(show)
 	TweenService:Create(Div3Ref,       TweenInfo.new(0.3, Enum.EasingStyle.Quint), { Position = UDim2.new(0,12,0,292+shift) }):Play()
 	TweenService:Create(StatusBarRef,  TweenInfo.new(0.3, Enum.EasingStyle.Quint), { Position = UDim2.new(0,12,0,300+shift) }):Play()
 	
-	-- Adjust frame height
 	TweenService:Create(Frame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
 		Size = UDim2.new(0, 280, 0, targetH)
 	}):Play()
@@ -267,11 +258,9 @@ Corner(ToggleBtn, 12)
 local ToggleStroke = Stroke(ToggleBtn, C.RED, 1.5)
 local ToggleBtnRef = ToggleBtn
 
--- Glow layer inside button
 local BtnGlow = MakeFrame(ToggleBtn, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0), C.RED, 0.92)
 Corner(BtnGlow, 12)
 
--- Icon bg circle
 local BtnIconBg = MakeFrame(ToggleBtn, UDim2.new(0,30,0,30), UDim2.new(0,8,0.5,-15), C.RED_DIM)
 Corner(BtnIconBg, 8)
 Stroke(BtnIconBg, C.RED, 1)
@@ -289,7 +278,6 @@ Corner(DelayRow, 10)
 Stroke(DelayRow, C.BORDER, 1)
 local DelayRowRef = DelayRow
 
--- icon
 local DelayIcon = MakeFrame(DelayRow, UDim2.new(0,26,0,26), UDim2.new(0,6,0.5,-13), C.BG2)
 Corner(DelayIcon, 7)
 Label(DelayIcon, "⏱", UDim2.new(1,0,1,0), UDim2.new(0,0,0,0), C.TEXT_DIM, Enum.Font.GothamBold, Enum.TextXAlignment.Center, 14)
@@ -324,18 +312,14 @@ local function StatCard(parent, xpos, icon, labelTxt, defaultVal, accentCol)
 	Corner(card, 10)
 	Stroke(card, C.BORDER, 1)
 
-	-- top color stripe
 	local stripe = MakeFrame(card, UDim2.new(1,0,0,2), UDim2.new(0,0,0,0), accentCol)
 	Corner(stripe, 2)
 
-	-- icon row
 	local iconLbl = Label(card, icon, UDim2.new(1,0,0,16), UDim2.new(0,0,0,8), accentCol, Enum.Font.GothamBold, Enum.TextXAlignment.Center, 12)
 	iconLbl.TextScaled = true
 
-	-- label
 	local lbl = Label(card, labelTxt, UDim2.new(1,0,0,13), UDim2.new(0,0,0,26), C.TEXT_DARK, Enum.Font.Gotham, Enum.TextXAlignment.Center, 9)
 
-	-- value
 	local val = Label(card, defaultVal, UDim2.new(1,-8,0,26), UDim2.new(0,4,0,42), accentCol, Enum.Font.GothamBold, Enum.TextXAlignment.Center, 16)
 	val.TextScaled = false
 
@@ -359,7 +343,6 @@ Gradient(Div3, ColorSequence.new({
 }), 0)
 local Div3Ref = Div3
 
--- Status text at bottom
 local StatusBar = Label(Frame, "● IDLE — Waiting to start", UDim2.new(1,-24,0,14), UDim2.new(0,12,0,300), C.TEXT_DARK, Enum.Font.Gotham, Enum.TextXAlignment.Left, 10)
 local StatusBarRef = StatusBar
 
@@ -398,7 +381,6 @@ end)
 Header.InputEnded:Connect(function(i)
 	if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
 		Dragging = false
-		-- Jika pergerakan mouse sangat kecil (< 5 pixel), anggap sebagai klik (bukan drag)
 		if DragStartPos and (i.Position - DragStartPos).Magnitude < 5 then
 			ToggleCollapse()
 		end
@@ -479,7 +461,6 @@ local function SetToggleOn(on)
 	end
 end
 
--- Hover effects
 ToggleBtn.MouseEnter:Connect(function()
 	TweenService:Create(ToggleBtn, TweenInfo.new(0.15), {
 		BackgroundColor3 = AutoHarvest and Color3.fromRGB(0,90,45) or Color3.fromRGB(100,25,25)
@@ -492,10 +473,21 @@ ToggleBtn.MouseLeave:Connect(function()
 	}):Play()
 end)
 
+-- [FIXED] Logic tombol toggle agar bisa dinyalakan kembali
 ToggleBtn.MouseButton1Click:Connect(function()
-	if InventoryFull then return end
+	-- Izinkan toggle menyala/mati walaupun InventoryFull sedang true.
+	-- User mungkin sudah membersihkan inventory atau ingin memaksa (override).
 	AutoHarvest = not AutoHarvest
 	SetToggleOn(AutoHarvest)
+	
+	-- Jika user menyalakan secara manual saat status InventoryFull = true,
+	-- kita reset flag tersebut agar loop utama melakukan pengecekan ulang (re-check).
+	-- - Jika inventory MASIH penuh, sistem akan otomatis mematikannya lagi dengan aman.
+	-- - Jika inventory SUDAH dibersihkan, auto harvest akan tetap berjalan normal.
+	if AutoHarvest and InventoryFull then
+		InventoryFull = false
+		ShowWarning(false)
+	end
 end)
 
 -- ╔══════════════════════════════════════════════╗
@@ -537,7 +529,6 @@ end
 -- ╔══════════════════════════════════════════════╗
 -- ║            INVENTORY COUNT TRACKER           ║
 -- ╚══════════════════════════════════════════════╝
--- Menghitung jumlah Tool di Backpack dan Karakter secara real-time
 
 local function UpdateInventoryCount()
 	local count = #Player.Backpack:GetChildren()
@@ -558,7 +549,7 @@ Player.CharacterAdded:Connect(function(char)
 	char.ChildRemoved:Connect(UpdateInventoryCount)
 	UpdateInventoryCount()
 end)
-UpdateInventoryCount() -- Initial call
+UpdateInventoryCount()
 
 -- ╔══════════════════════════════════════════════╗
 -- ║             COUNT AVAILABLE                  ║
