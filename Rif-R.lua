@@ -745,7 +745,9 @@ task.defer(function()
 		end
 	end
 
-	-- Cari MainBar dimanapun
+	task.defer(function()
+
+	-- cari MainBar aman dulu
 	local mainBar
 	for _, v in ipairs(playerGui:GetDescendants()) do
 		if v:IsA("Frame") and v.Name == "MainBar" then
@@ -759,46 +761,47 @@ task.defer(function()
 		return
 	end
 
-	-- Garis pemisah
+	-- separator aman
 	if not mainBar:FindFirstChild("PluginSeparator") then
 		local line = Instance.new("Frame")
 		line.Name = "PluginSeparator"
 		line.Parent = mainBar
-		line.Position = UDim2.new(0, 37p, 0, 3)
+		line.Position = UDim2.new(0, 370, 0, 3)
 		line.Size = UDim2.new(0, 2, 0, 30)
 		line.BorderSizePixel = 0
 		line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	end
 
-	-- Cari partsel
+	-- cari PartSel aman
 	local partsel
 	for _, v in ipairs(mainBar:GetDescendants()) do
-		if v.Name == "partsel" and (v:IsA("TextButton") or v:IsA("ImageButton")) then
+		if (v.Name == "PartSel" or v.Name == "partsel") 
+			and (v:IsA("TextButton") or v:IsA("ImageButton")) then
 			partsel = v
 			break
 		end
 	end
 
 	if not partsel then
-		warn("[Plugin] partsel tidak ditemukan")
+		warn("[Plugin] PartSel tidak ditemukan")
 		return
 	end
 
-	-- Clone tombol
-	if not mainBar:FindFirstChild("pliguinbtn") then
+	-- clone button
+	if not mainBar:FindFirstChild("PluginBtn") then
 		local clone = partsel:Clone()
 
-		clone.Name = "pliguinbtn"
+		clone.Name = "PluginBtn"
 		clone.Parent = mainBar
 		clone.Position = UDim2.new(0, 380, 0, 3)
 
 		if clone:IsA("TextButton") then
-			clone.Text = "pliguin"
+			clone.Text = "Plugin"
 		end
 
 		local txt = clone:FindFirstChildWhichIsA("TextLabel", true)
 		if txt then
-			txt.Text = "pliguin"
+			txt.Text = "Plugin"
 		end
 
 		for _, d in ipairs(clone:GetDescendants()) do
