@@ -130,7 +130,7 @@ local function createLineSeparator(parent)
 	local lineFrame = Instance.new("Frame")
 	lineFrame.Name = "LineSeparator"
 	lineFrame.Size = UDim2.new(0, 1, 0, 30)
-	lineFrame.Position = UDim2.new(0, 370, 0, 3)
+	lineFrame.Position = UDim2.new(0, 405, 0, 3)
 	lineFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 	lineFrame.BorderSizePixel = 0
 	lineFrame.Parent = parent
@@ -181,9 +181,9 @@ local function duplicatePartSelButton()
 	local pluginBtn = Instance.new("TextButton")
 	pluginBtn.Name = "PluginBtn"
 	pluginBtn.Size = partSelButton.Size
-	pluginBtn.Position = UDim2.new(0, 380, 0, 3)
+	pluginBtn.Position = UDim2.new(0, 430, 0, 3)
 	pluginBtn.BackgroundColor3 = THEME.TextButtonColor
-   pluginBtn.BorderSizePixel = 0
+	pluginBtn.BorderSizePixel = 0
 	pluginBtn.TextColor3 = THEME.TextColor
 	pluginBtn.TextSize = 14
 	pluginBtn.Font = Enum.Font.GothamMedium
@@ -725,3 +725,15 @@ playerGui.DescendantAdded:Connect(function(obj)
 		return
 	end
 end)
+
+print("[ThemeRecolor v8 - FINAL] ✅ Script berjalan! Key: STUDIORIS2024")
+print("[ThemeRecolor v8 - FINAL] 🎨 Images: 14547804225, 84031887426375")
+print("[ThemeRecolor v8 - FINAL] 🔘 Button: PluginBtn @ (430, 3)")
+print("[ThemeRecolor v8 - FINAL] 🔄 Rotate Button dengan rotasi otomatis")
+print("[ThemeRecolor v8 - FINAL] ━ Line Separator @ (405, 3)")
+print("[ThemeRecolor v8 - FINAL] 🎨 ColorPalette Elements:")
+print("   ├─ OkButton & CancelButton (text + bg)")
+print("   ├─ BasicColorsTitle (text + bg)")
+print("   └─ SelectedColor texts (text only)")
+print("[ThemeRecolor v8 - FINAL] 🔒 ColorPalette toggle button protected")
+print("[ThemeRecolor v8 - FINAL] 📋 Cek output console untuk debug info")
