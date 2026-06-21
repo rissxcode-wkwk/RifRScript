@@ -458,40 +458,41 @@ local function applyColorPaletteTheme(colorPaletteFrame)
 		colorPaletteFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 		
 		-- 5. THEME SPECIFIC ELEMENTS INSIDE COLORPALETTE
-		for _, child in ipairs(colorPaletteFrame:GetDescendants()) do
-			-- OkButton & CancelButton - theme button (text + background)
-			if child.Name == "OkButton" or child.Name == "CancelButton" then
-				if child:IsA("TextButton") then
-					child.TextColor3 = THEME.TextColor
-					child.BackgroundColor3 = THEME.TextButtonColor
-					protectColorProperty(child, "TextColor3", THEME.TextColor)
-					protectColorProperty(child, "BackgroundColor3", THEME.TextButtonColor)
-				end
-			end
-			
-			-- BasicColorsTitle - theme background + text
-			elseif child.Name == "BasicColorsTitle" then
-				if child:IsA("TextLabel") then
-					child.TextColor3 = THEME.TextColor
-					if child.BackgroundTransparency < 1 then
-						child.BackgroundColor3 = THEME.FrameColor
-					end
-					protectColorProperty(child, "TextColor3", THEME.TextColor)
-					if child.BackgroundTransparency < 1 then
-						protectColorProperty(child, "BackgroundColor3", THEME.FrameColor)
-					end
-				end
-			end
-			
-			-- SelectedColor, SelectedColorText, SelectedBrickColorText - HANYA TEXT
-			elseif child.Name == "SelectedColor" or child.Name == "SelectedColorText" or child.Name == "SelectedBrickColorText" then
-				if child:IsA("TextLabel") then
-					child.TextColor3 = THEME.TextColor
-					protectColorProperty(child, "TextColor3", THEME.TextColor)
-					-- Background TIDAK diubah
-				end
-			end
-		end
+		for _, child in ipairs(colorPaletteFrame:GetDescendants()) do    
+
+    -- OkButton & CancelButton
+    if child.Name == "OkButton" or child.Name == "CancelButton" then    
+        if child:IsA("TextButton") then    
+            child.TextColor3 = THEME.TextColor    
+            child.BackgroundColor3 = THEME.TextButtonColor    
+            protectColorProperty(child, "TextColor3", THEME.TextColor)    
+            protectColorProperty(child, "BackgroundColor3", THEME.TextButtonColor)    
+        end    
+
+    -- BasicColorsTitle
+    elseif child.Name == "BasicColorsTitle" then    
+        if child:IsA("TextLabel") then    
+            child.TextColor3 = THEME.TextColor    
+            if child.BackgroundTransparency < 1 then    
+                child.BackgroundColor3 = THEME.FrameColor    
+            end    
+            protectColorProperty(child, "TextColor3", THEME.TextColor)    
+            if child.BackgroundTransparency < 1 then    
+                protectColorProperty(child, "BackgroundColor3", THEME.FrameColor)    
+            end    
+        end    
+
+    -- Selected texts (TEXT ONLY)
+    elseif child.Name == "SelectedColor" 
+        or child.Name == "SelectedColorText" 
+        or child.Name == "SelectedBrickColorText" then    
+
+        if child:IsA("TextLabel") then    
+            child.TextColor3 = THEME.TextColor    
+            protectColorProperty(child, "TextColor3", THEME.TextColor)    
+        end    
+    end    
+end
 	end)
 end
 
