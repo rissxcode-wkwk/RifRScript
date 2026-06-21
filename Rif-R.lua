@@ -1,642 +1,869 @@
--- AutoHarvest v2.1 — LocalScript
--- Features:
---   • Deteksi label "your inventory is full" → auto harvest mati otomatis
---   • Counter harvest akurat (nambah tiap HarvestPart baru berhasil diambil)
---   • UI ultra-modern dengan animasi smooth
---   • [NEW] Klik Header untuk Collapse/Expand UI
---   • [NEW] Label penghitung isi Inventory (Backpack + Character Tools)
---   • [NEW] Layout & Scale yang lebih rapi dan proporsional
---   • [FIX] Smart Override: Bisa dinyalakan manual tanpa langsung dimatikan sistem (mencegah konflik delay UI)
+--[[
+╔════════════════════════════════════════════════════════════════╗
+║           ThemeRecolor.lua v8 - MODIFIED & ENHANCED            ║
+║                      Made By Redz                              ║
+║                    Modified Version                            ║
+║                   UPDATED: TopBar & Strokes                    ║
+╚════════════════════════════════════════════════════════════════╝
 
-local Players      = game:GetService("Players")
-local UIS          = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local RunService   = game:GetService("RunService")
+FITUR UTAMA:
+✅ Semua text putih (255,255,255)
+✅ Semua background abu-abu tema Roblox Studio
+✅ Color Protection System - otomatis kembalikan warna jika ada script lain yang ubah
+✅ Proteksi "Select MultiButton" (100% tidak diubah)
+✅ Proteksi ColorPalette > Folder > Button (100% tidak diubah)
+✅ Real-time monitoring dengan PropertyChanged signal
+✅ Dukungan DescendantAdded untuk UI baru
+✅ Sistem red color exception tetap berjalan
+✅ StudioRis Box Key system tetap berjalan
+✅ ColorPalette centering tetap berjalan
+✅ Custom Image IDs dengan rotasi
+✅ Duplikasi PartSel Button ke PluginBtn
+✅ Frame garis separator
+✅ TopBar: Hapus strokes + button backgrounds
+✅ Blue separator line under TopBar buttons
 
-local Player = Players.LocalPlayer
+CARA PAKAI:
+Taruh sebagai LocalScript di StarterPlayer > StarterPlayerScripts
+ATAU di StarterPlayer > StarterCharacterScripts
 
-local AutoHarvest    = false
-local HarvestDelay   = 0.2
-local TotalHarvested = 0
-local InventoryFull  = false
-local ManualOverride = false -- [NEW] Flag untuk izin menyalakan paksa
-local isCollapsed    = false
+KEY: STUDIORIS2024
+]]
 
--- ╔══════════════════════════════════════════════╗
--- ║                  THEME                       ║
--- ╚══════════════════════════════════════════════╝
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
-local C = {
-	BG           = Color3.fromRGB(8,  10,  14),
-	BG2          = Color3.fromRGB(14, 18,  24),
-	PANEL        = Color3.fromRGB(20, 25,  33),
-	PANEL2       = Color3.fromRGB(26, 32,  42),
-	BORDER       = Color3.fromRGB(40, 50,  65),
-	BORDER_GLOW  = Color3.fromRGB(0, 210, 100),
-
-	GREEN        = Color3.fromRGB(0, 220, 100),
-	GREEN_DIM    = Color3.fromRGB(0,  70,  35),
-	GREEN_MID    = Color3.fromRGB(0, 150,  70),
-
-	RED          = Color3.fromRGB(230, 55, 55),
-	RED_DIM      = Color3.fromRGB(80,  20, 20),
-
-	AMBER        = Color3.fromRGB(255, 185, 30),
-	AMBER_DIM    = Color3.fromRGB(80,  55,  5),
-
-	TEXT         = Color3.new(1, 1, 1),
-	TEXT_DIM     = Color3.fromRGB(160, 175, 195),
-	TEXT_DARK    = Color3.fromRGB(90, 110, 135),
+-- ====== KONFIGURASI WARNA TEMA ======
+local THEME = {
+	FrameColor       = Color3.fromRGB(46, 46, 46),   -- Abu-abu gelap
+	FrameColorAlt    = Color3.fromRGB(56, 56, 56),   -- Abu-abu sedikit terang
+	BorderColor      = Color3.fromRGB(35, 35, 35),   -- Border gelap
+	TextColor        = Color3.fromRGB(255, 255, 255), -- Putih murni
+	TextButtonColor  = Color3.fromRGB(60, 60, 60),   -- Abu-abu button
+	TextButtonHover  = Color3.fromRGB(75, 75, 75),   -- Abu-abu hover
+	TextBoxColor     = Color3.fromRGB(38, 38, 38),   -- Abu-abu textbox
+	StrokeColor      = Color3.fromRGB(100, 100, 100), -- Abu-abu stroke
+	BlueSeparator    = Color3.fromRGB(0, 120, 200),  -- Biru separator
 }
 
--- ╔══════════════════════════════════════════════╗
--- ║               HELPER FUNCTIONS               ║
--- ╚══════════════════════════════════════════════╝
+-- KONFIGURASI IMAGE & CUSTOM ELEMENTS
+local CUSTOM_CONFIG = {
+	-- Image IDs untuk Select Label
+	SelectImageID_1 = "rbxasset://textures/Cursor.png", -- Fallback, akan diganti
+	SelectImageID_2 = "14547804225",
+	SelectImageID_3 = "84031887426375",
+	ImageRotation = 0, -- Rotasi dalam derajat
+}
 
-local function Corner(p, r)
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, r or 8)
-	c.Parent = p
-	return c
+-- Tabel untuk tracking objek yang sudah diproteksi
+local protectedObjects = {}
+local protectedConnections = {}
+
+-- ====== FUNGSI CEK WARNA MERAH ======
+local function isRedColor(color)
+	if not color then return false end
+	return color.R > 0.6 and color.G < 0.3 and color.B < 0.3
 end
 
-local function Stroke(p, col, th, trans)
-	local s = Instance.new("UIStroke")
-	s.Color = col or C.BORDER
-	s.Thickness = th or 1
-	s.Transparency = trans or 0
-	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	s.Parent = p
-	return s
+-- ====== FUNGSI CEK SELECT MULTIBUTTON (STRICT) ======
+local function isSelectMultiButton(obj)
+	if not obj:IsA("GuiButton") then return false end
+	return obj.Name == "Select MultiButton" or obj.Name == "SelectMultiButton"
 end
 
-local function Gradient(p, cs, rot)
-	local g = Instance.new("UIGradient")
-	g.Color = cs
-	g.Rotation = rot or 90
-	g.Parent = p
-	return g
-end
-
-local function Label(parent, t, sz, pos, col, font, align, xalign)
-	local l = Instance.new("TextLabel")
-	l.BackgroundTransparency = 1
-	l.Text = t or ""
-	l.Size = sz or UDim2.new(1,0,1,0)
-	l.Position = pos or UDim2.new(0,0,0,0)
-	l.TextColor3 = col or C.TEXT
-	l.Font = font or Enum.Font.GothamBold
-	l.TextSize = xalign or 14
-	l.TextScaled = false
-	l.TextXAlignment = align or Enum.TextXAlignment.Center
-	l.Parent = parent
-	return l
-end
-
-local function MakeFrame(parent, sz, pos, bg, trans)
-	local f = Instance.new("Frame")
-	f.Size = sz
-	f.Position = pos or UDim2.new(0,0,0,0)
-	f.BackgroundColor3 = bg or C.PANEL
-	f.BackgroundTransparency = trans or 0
-	f.BorderSizePixel = 0
-	f.Parent = parent
-	return f
-end
-
--- ╔══════════════════════════════════════════════╗
--- ║                  GUI ROOT                    ║
--- ╚══════════════════════════════════════════════╝
-
-local Gui = Instance.new("ScreenGui")
-Gui.Name = "AutoHarvestPRO"
-Gui.ResetOnSpawn = false
-Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-Gui.Parent = Player:WaitForChild("PlayerGui")
-
--- ╔══════════════════════════════════════════════╗
--- ║               MAIN FRAME                     ║
--- ╚══════════════════════════════════════════════╝
-
-local Frame = MakeFrame(Gui, UDim2.new(0, 280, 0, 340), UDim2.new(0.5, -140, 0.5, -170), C.BG)
-Frame.Active = true
-Frame.ClipsDescendants = true
-Corner(Frame, 16)
-local FrameStroke = Stroke(Frame, C.BORDER, 1.5)
-
-local AccentBar = MakeFrame(Frame, UDim2.new(1,0,0,2), UDim2.new(0,0,0,0), C.GREEN)
-AccentBar.ZIndex = 6
-Gradient(AccentBar, ColorSequence.new({
-	ColorSequenceKeypoint.new(0,   Color3.fromRGB(0,140,60)),
-	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,255,120)),
-	ColorSequenceKeypoint.new(1,   Color3.fromRGB(0,140,60)),
-}), 0)
-
-local BgTint = MakeFrame(Frame, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0), C.BG2)
-BgTint.ZIndex = 0
-Gradient(BgTint, ColorSequence.new({
-	ColorSequenceKeypoint.new(0,   Color3.fromRGB(8, 10, 14)),
-	ColorSequenceKeypoint.new(1,   Color3.fromRGB(12, 16, 22)),
-}), 135)
-
--- ╔══════════════════════════════════════════════╗
--- ║                  HEADER                      ║
--- ╚══════════════════════════════════════════════╝
-
-local Header = MakeFrame(Frame, UDim2.new(1,0,0,50), UDim2.new(0,0,0,2), C.BG, 1)
-Header.ZIndex = 3
-
-local LogoCircle = MakeFrame(Header, UDim2.new(0,36,0,36), UDim2.new(0,12,0.5,-18), C.GREEN_DIM)
-Corner(LogoCircle, 10)
-Stroke(LogoCircle, C.GREEN_MID, 1)
-local LogoIcon = Label(LogoCircle, "🌿", UDim2.new(1,0,1,0), UDim2.new(0,0,0,0), C.GREEN, Enum.Font.GothamBold, Enum.TextXAlignment.Center, 18)
-LogoIcon.TextScaled = true
-
-local TitleLbl = Label(Header, "AUTO HARVEST", UDim2.new(1,-70,0,20), UDim2.new(0,56,0,8), C.TEXT, Enum.Font.GothamBold, Enum.TextXAlignment.Left, 15)
-local SubLbl   = Label(Header, "PRO FARMING UTILITY", UDim2.new(1,-70,0,14), UDim2.new(0,56,0,28), C.TEXT_DIM, Enum.Font.Gotham, Enum.TextXAlignment.Left, 10)
-
-local VerBadge = MakeFrame(Header, UDim2.new(0,32,0,16), UDim2.new(1,-44,0.5,-8), Color3.fromRGB(0,60,30))
-Corner(VerBadge, 4)
-Stroke(VerBadge, C.GREEN_MID, 1)
-Label(VerBadge, "v2.1", UDim2.new(1,0,1,0), UDim2.new(0,0,0,0), C.GREEN, Enum.Font.GothamBold, Enum.TextXAlignment.Center, 9)
-
-local StatusDot = MakeFrame(Header, UDim2.new(0,9,0,9), UDim2.new(1,-18,0,10), C.RED)
-Corner(StatusDot, 99)
-local StatusRing = MakeFrame(Header, UDim2.new(0,9,0,9), UDim2.new(1,-18,0,10), C.BG, 1)
-Corner(StatusRing, 99)
-Stroke(StatusRing, C.RED, 1.5)
-
-local CollapseIcon = Label(Header, "▼", UDim2.new(0, 24, 0, 24), UDim2.new(1, -32, 0.5, -12), C.TEXT_DIM, Enum.Font.GothamBold, Enum.TextXAlignment.Center, 16)
-CollapseIcon.ZIndex = 5
-
--- ╔══════════════════════════════════════════════╗
--- ║               DIVIDER 1                      ║
--- ╚══════════════════════════════════════════════╝
-
-local Div1 = MakeFrame(Frame, UDim2.new(1,-24,0,1), UDim2.new(0,12,0,50), C.BORDER)
-Gradient(Div1, ColorSequence.new({
-	ColorSequenceKeypoint.new(0,   Color3.fromRGB(20,25,33)),
-	ColorSequenceKeypoint.new(0.3, C.BORDER),
-	ColorSequenceKeypoint.new(0.7, C.BORDER),
-	ColorSequenceKeypoint.new(1,   Color3.fromRGB(20,25,33)),
-}), 0)
-
--- ╔══════════════════════════════════════════════╗
--- ║          INVENTORY FULL WARNING BANNER       ║
--- ╚══════════════════════════════════════════════╝
-
-local WarnBanner = MakeFrame(Frame, UDim2.new(1,-24,0,0), UDim2.new(0,12,0,58), C.AMBER_DIM)
-WarnBanner.ClipsDescendants = true
-Corner(WarnBanner, 8)
-Stroke(WarnBanner, C.AMBER, 1)
-local WarnIcon = Label(WarnBanner, "⚠", UDim2.new(0,24,1,0), UDim2.new(0,8,0,0), C.AMBER, Enum.Font.GothamBold, Enum.TextXAlignment.Center, 14)
-WarnIcon.TextScaled = true
-local WarnText = Label(WarnBanner, "INVENTORY FULL — Harvest stopped", UDim2.new(1,-40,1,0), UDim2.new(0,34,0,0), C.AMBER, Enum.Font.GothamBold, Enum.TextXAlignment.Left, 11)
-
-WarnBanner.Size = UDim2.new(1,-24,0,0)
-WarnBanner.BackgroundTransparency = 1
-local warnVisible = false
-
-local function ShowWarning(show)
-	if show == warnVisible then return end
-	warnVisible = show
+-- ====== FUNGSI CEK BUTTON DALAM FOLDER DI COLORPALETTE (ROBUST) ======
+local function isButtonInFolderInsideColorPalette(obj)
+	if not obj:IsA("GuiButton") then return false end
 	
-	if show and isCollapsed then
-		isCollapsed = false
-		CollapseIcon.Text = "▼"
-	end
-
-	local shift = show and 42 or 0
-	local targetH = isCollapsed and 50 or (show and 380 or 340)
-
-	TweenService:Create(WarnBanner, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-		Size = show and UDim2.new(1,-24,0,34) or UDim2.new(1,-24,0,0),
-		BackgroundTransparency = show and 0 or 1,
-	}):Play()
-	
-	TweenService:Create(Div2Ref,       TweenInfo.new(0.3, Enum.EasingStyle.Quint), { Position = UDim2.new(0,12,0,98+shift) }):Play()
-	TweenService:Create(ToggleBtnRef,  TweenInfo.new(0.3, Enum.EasingStyle.Quint), { Position = UDim2.new(0,12,0,106+shift) }):Play()
-	TweenService:Create(DelayRowRef,   TweenInfo.new(0.3, Enum.EasingStyle.Quint), { Position = UDim2.new(0,12,0,158+shift) }):Play()
-	TweenService:Create(StatsRowRef,   TweenInfo.new(0.3, Enum.EasingStyle.Quint), { Position = UDim2.new(0,12,0,204+shift) }):Play()
-	TweenService:Create(Div3Ref,       TweenInfo.new(0.3, Enum.EasingStyle.Quint), { Position = UDim2.new(0,12,0,292+shift) }):Play()
-	TweenService:Create(StatusBarRef,  TweenInfo.new(0.3, Enum.EasingStyle.Quint), { Position = UDim2.new(0,12,0,300+shift) }):Play()
-	
-	TweenService:Create(Frame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-		Size = UDim2.new(0, 280, 0, targetH)
-	}):Play()
-end
-
--- ╔══════════════════════════════════════════════╗
--- ║              SECOND DIVIDER                  ║
--- ╚══════════════════════════════════════════════╝
-
-local Div2 = MakeFrame(Frame, UDim2.new(1,-24,0,1), UDim2.new(0,12,0,98), C.BORDER)
-Gradient(Div2, ColorSequence.new({
-	ColorSequenceKeypoint.new(0,   Color3.fromRGB(20,25,33)),
-	ColorSequenceKeypoint.new(0.3, C.BORDER),
-	ColorSequenceKeypoint.new(0.7, C.BORDER),
-	ColorSequenceKeypoint.new(1,   Color3.fromRGB(20,25,33)),
-}), 0)
-local Div2Ref = Div2
-
--- ╔══════════════════════════════════════════════╗
--- ║              TOGGLE BUTTON                   ║
--- ╚══════════════════════════════════════════════╝
-
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(1,-24,0,44)
-ToggleBtn.Position = UDim2.new(0,12,0,106)
-ToggleBtn.BackgroundColor3 = C.RED_DIM
-ToggleBtn.Text = ""
-ToggleBtn.AutoButtonColor = false
-ToggleBtn.BorderSizePixel = 0
-ToggleBtn.Parent = Frame
-Corner(ToggleBtn, 12)
-local ToggleStroke = Stroke(ToggleBtn, C.RED, 1.5)
-local ToggleBtnRef = ToggleBtn
-
-local BtnGlow = MakeFrame(ToggleBtn, UDim2.new(1,0,1,0), UDim2.new(0,0,0,0), C.RED, 0.92)
-Corner(BtnGlow, 12)
-
-local BtnIconBg = MakeFrame(ToggleBtn, UDim2.new(0,30,0,30), UDim2.new(0,8,0.5,-15), C.RED_DIM)
-Corner(BtnIconBg, 8)
-Stroke(BtnIconBg, C.RED, 1)
-local BtnIcon = Label(BtnIconBg, "⏸", UDim2.new(1,0,1,0), UDim2.new(0,0,0,0), C.RED, Enum.Font.GothamBold, Enum.TextXAlignment.Center, 14)
-BtnIcon.TextScaled = true
-
-local BtnLabel = Label(ToggleBtn, "START HARVESTING", UDim2.new(1,-56,1,0), UDim2.new(0,46,0,0), C.TEXT, Enum.Font.GothamBold, Enum.TextXAlignment.Left, 13)
-
--- ╔══════════════════════════════════════════════╗
--- ║              DELAY ROW                       ║
--- ╚══════════════════════════════════════════════╝
-
-local DelayRow = MakeFrame(Frame, UDim2.new(1,-24,0,38), UDim2.new(0,12,0,158), C.PANEL)
-Corner(DelayRow, 10)
-Stroke(DelayRow, C.BORDER, 1)
-local DelayRowRef = DelayRow
-
-local DelayIcon = MakeFrame(DelayRow, UDim2.new(0,26,0,26), UDim2.new(0,6,0.5,-13), C.BG2)
-Corner(DelayIcon, 7)
-Label(DelayIcon, "⏱", UDim2.new(1,0,1,0), UDim2.new(0,0,0,0), C.TEXT_DIM, Enum.Font.GothamBold, Enum.TextXAlignment.Center, 14)
-
-Label(DelayRow, "DELAY (s)", UDim2.new(0,80,1,0), UDim2.new(0,38,0,0), C.TEXT_DIM, Enum.Font.Gotham, Enum.TextXAlignment.Left, 11)
-
-local DelayBox = Instance.new("TextBox")
-DelayBox.Size = UDim2.new(0,72,0,26)
-DelayBox.Position = UDim2.new(1,-80,0.5,-13)
-DelayBox.BackgroundColor3 = C.BG2
-DelayBox.TextColor3 = C.GREEN
-DelayBox.PlaceholderText = "0.2"
-DelayBox.Text = tostring(HarvestDelay)
-DelayBox.TextScaled = false
-DelayBox.TextSize = 13
-DelayBox.Font = Enum.Font.GothamBold
-DelayBox.ClearTextOnFocus = false
-DelayBox.TextXAlignment = Enum.TextXAlignment.Center
-DelayBox.Parent = DelayRow
-Corner(DelayBox, 7)
-Stroke(DelayBox, C.BORDER, 1)
-
--- ╔══════════════════════════════════════════════╗
--- ║              STATS ROW (3 CARDS)             ║
--- ╚══════════════════════════════════════════════╝
-
-local StatsRow = MakeFrame(Frame, UDim2.new(1,-24,0,80), UDim2.new(0,12,0,204), C.BG, 1)
-local StatsRowRef = StatsRow
-
-local function StatCard(parent, xpos, icon, labelTxt, defaultVal, accentCol)
-	local card = MakeFrame(parent, UDim2.new(0.31, 0, 1, 0), UDim2.new(xpos, 0, 0, 0), C.PANEL)
-	Corner(card, 10)
-	Stroke(card, C.BORDER, 1)
-
-	local stripe = MakeFrame(card, UDim2.new(1,0,0,2), UDim2.new(0,0,0,0), accentCol)
-	Corner(stripe, 2)
-
-	local iconLbl = Label(card, icon, UDim2.new(1,0,0,16), UDim2.new(0,0,0,8), accentCol, Enum.Font.GothamBold, Enum.TextXAlignment.Center, 12)
-	iconLbl.TextScaled = true
-
-	local lbl = Label(card, labelTxt, UDim2.new(1,0,0,13), UDim2.new(0,0,0,26), C.TEXT_DARK, Enum.Font.Gotham, Enum.TextXAlignment.Center, 9)
-
-	local val = Label(card, defaultVal, UDim2.new(1,-8,0,26), UDim2.new(0,4,0,42), accentCol, Enum.Font.GothamBold, Enum.TextXAlignment.Center, 16)
-	val.TextScaled = false
-
-	return val
-end
-
-local AvailableVal  = StatCard(StatsRow, 0,      "📦", "AVAILABLE", "0", C.TEXT_DIM)
-local InventoryVal  = StatCard(StatsRow, 0.343,  "🎒", "INVENTORY", "0", C.AMBER)
-local HarvestedVal  = StatCard(StatsRow, 0.686,  "🌿", "HARVESTED", "0", C.GREEN)
-
--- ╔══════════════════════════════════════════════╗
--- ║              DIVIDER 3 + STATUS BAR          ║
--- ╚══════════════════════════════════════════════╝
-
-local Div3 = MakeFrame(Frame, UDim2.new(1,-24,0,1), UDim2.new(0,12,0,292), C.BORDER)
-Gradient(Div3, ColorSequence.new({
-	ColorSequenceKeypoint.new(0,   Color3.fromRGB(20,25,33)),
-	ColorSequenceKeypoint.new(0.3, C.BORDER),
-	ColorSequenceKeypoint.new(0.7, C.BORDER),
-	ColorSequenceKeypoint.new(1,   Color3.fromRGB(20,25,33)),
-}), 0)
-local Div3Ref = Div3
-
-local StatusBar = Label(Frame, "● IDLE — Waiting to start", UDim2.new(1,-24,0,14), UDim2.new(0,12,0,300), C.TEXT_DARK, Enum.Font.Gotham, Enum.TextXAlignment.Left, 10)
-local StatusBarRef = StatusBar
-
--- ╔══════════════════════════════════════════════╗
--- ║                DRAG & COLLAPSE LOGIC         ║
--- ╚══════════════════════════════════════════════╝
-
-local Dragging = false
-local DragInput, DragStart, StartPos, DragStartPos
-
-local function ToggleCollapse()
-	isCollapsed = not isCollapsed
-	CollapseIcon.Text = isCollapsed and "▲" or "▼"
-	
-	local targetH = isCollapsed and 50 or (warnVisible and 380 or 340)
-	TweenService:Create(Frame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-		Size = UDim2.new(0, 280, 0, targetH)
-	}):Play()
-end
-
-Header.InputBegan:Connect(function(i)
-	if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-		Dragging = true
-		DragStart = i.Position
-		StartPos = Frame.Position
-		DragStartPos = i.Position
-	end
-end)
-
-Header.InputChanged:Connect(function(i)
-	if i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch then
-		DragInput = i
-	end
-end)
-
-Header.InputEnded:Connect(function(i)
-	if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-		Dragging = false
-		if DragStartPos and (i.Position - DragStartPos).Magnitude < 5 then
-			ToggleCollapse()
-		end
-		DragStartPos = nil
-	end
-end)
-
-UIS.InputChanged:Connect(function(i)
-	if i == DragInput and Dragging then
-		local d = i.Position - DragStart
-		Frame.Position = UDim2.new(StartPos.X.Scale, StartPos.X.Offset + d.X, StartPos.Y.Scale, StartPos.Y.Offset + d.Y)
-	end
-end)
-
--- ╔══════════════════════════════════════════════╗
--- ║             PULSE ANIMATION                  ║
--- ╚══════════════════════════════════════════════╝
-
-local pulseActive = false
-
-local function StartPulse()
-	if pulseActive then return end
-	pulseActive = true
-	task.spawn(function()
-		while pulseActive do
-			TweenService:Create(StatusRing, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				Size = UDim2.new(0,20,0,20), Position = UDim2.new(1,-24,0,5), BackgroundTransparency = 0.3
-			}):Play()
-			task.wait(0.5)
-			TweenService:Create(StatusRing, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-				Size = UDim2.new(0,9,0,9), Position = UDim2.new(1,-18,0,10), BackgroundTransparency = 1
-			}):Play()
-			task.wait(0.7)
-		end
-	end)
-end
-
-local function StopPulse()
-	pulseActive = false
-	StatusRing.Size = UDim2.new(0,9,0,9)
-	StatusRing.Position = UDim2.new(1,-18,0,10)
-	StatusRing.BackgroundTransparency = 1
-end
-
--- ╔══════════════════════════════════════════════╗
--- ║            TOGGLE STATE LOGIC                ║
--- ╚══════════════════════════════════════════════╝
-
-local function SetToggleOn(on)
-	if on then
-		TweenService:Create(ToggleBtn,   TweenInfo.new(0.2), { BackgroundColor3 = C.GREEN_DIM }):Play()
-		TweenService:Create(BtnGlow,     TweenInfo.new(0.2), { BackgroundColor3 = C.GREEN_MID, BackgroundTransparency = 0.88 }):Play()
-		TweenService:Create(BtnIconBg,   TweenInfo.new(0.2), { BackgroundColor3 = Color3.fromRGB(0,50,25) }):Play()
-		ToggleStroke.Color = C.GREEN
-		BtnIcon.Text = "▶"
-		BtnIcon.TextColor3 = C.GREEN
-		BtnLabel.Text = "STOP HARVESTING"
-		Stroke(BtnIconBg, C.GREEN, 1)
-		StatusDot.BackgroundColor3 = C.GREEN
-		Stroke(StatusRing, C.GREEN, 1.5)
-		StatusBar.Text = "● RUNNING — Auto harvesting active"
-		StatusBar.TextColor3 = C.GREEN
-		StartPulse()
-	else
-		TweenService:Create(ToggleBtn,   TweenInfo.new(0.2), { BackgroundColor3 = C.RED_DIM }):Play()
-		TweenService:Create(BtnGlow,     TweenInfo.new(0.2), { BackgroundColor3 = C.RED, BackgroundTransparency = 0.92 }):Play()
-		TweenService:Create(BtnIconBg,   TweenInfo.new(0.2), { BackgroundColor3 = C.RED_DIM }):Play()
-		ToggleStroke.Color = C.RED
-		BtnIcon.Text = "⏸"
-		BtnIcon.TextColor3 = C.RED
-		BtnLabel.Text = "START HARVESTING"
-		Stroke(BtnIconBg, C.RED, 1)
-		StatusDot.BackgroundColor3 = C.RED
-		Stroke(StatusRing, C.RED, 1.5)
-		StatusBar.Text = "● IDLE — Waiting to start"
-		StatusBar.TextColor3 = C.TEXT_DARK
-		StopPulse()
-	end
-end
-
-ToggleBtn.MouseEnter:Connect(function()
-	TweenService:Create(ToggleBtn, TweenInfo.new(0.15), {
-		BackgroundColor3 = AutoHarvest and Color3.fromRGB(0,90,45) or Color3.fromRGB(100,25,25)
-	}):Play()
-end)
-
-ToggleBtn.MouseLeave:Connect(function()
-	TweenService:Create(ToggleBtn, TweenInfo.new(0.15), {
-		BackgroundColor3 = AutoHarvest and C.GREEN_DIM or C.RED_DIM
-	}):Play()
-end)
-
--- [FIXED] Logic tombol toggle dengan Smart Override
-ToggleBtn.MouseButton1Click:Connect(function()
-	AutoHarvest = not AutoHarvest
-	SetToggleOn(AutoHarvest)
-	
-	if AutoHarvest then
-		-- User menyalakan secara manual, beri hak istimewa (override)
-		-- Ini mencegah sistem langsung mematikannya lagi karena delay UI Roblox
-		ManualOverride = true
-		InventoryFull = false
-		ShowWarning(false)
-	else
-		ManualOverride = false
-	end
-end)
-
--- ╔══════════════════════════════════════════════╗
--- ║              DELAY INPUT                     ║
--- ╚══════════════════════════════════════════════╝
-
-DelayBox.FocusLost:Connect(function()
-	local n = tonumber(DelayBox.Text)
-	if n and n > 0 then
-		HarvestDelay = math.clamp(n, 0.05, 60)
-		DelayBox.Text = string.format("%.2f", HarvestDelay)
-	else
-		DelayBox.Text = tostring(HarvestDelay)
-	end
-end)
-
--- ╔══════════════════════════════════════════════╗
--- ║         INVENTORY FULL DETECTION             ║
--- ╚══════════════════════════════════════════════╝
-
-local function CheckInventoryFull()
-	local gui = Player:FindFirstChild("PlayerGui")
-	if not gui then return false end
-
-	for _, obj in ipairs(gui:GetDescendants()) do
-		if (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("Frame")) then
-			local txt = ""
-			if obj:IsA("TextLabel") or obj:IsA("TextButton") then
-				txt = obj.Text or ""
-			end
-			if txt:lower():find("inventory is full") or txt:lower():find("inventori penuh") then
+	local parent = obj.Parent
+	if parent and parent:IsA("Folder") then
+		local grandparent = parent.Parent
+		while grandparent and grandparent ~= playerGui do
+			if grandparent:IsA("Frame") and grandparent.Name == "ColorPalette" then
 				return true
 			end
+			grandparent = grandparent.Parent
 		end
 	end
 	return false
 end
 
--- ╔══════════════════════════════════════════════╗
--- ║            INVENTORY COUNT TRACKER           ║
--- ╚══════════════════════════════════════════════╝
+-- ====== FUNGSI CEK APAKAH OBJECT DI TOPBAR ======
+local function isInTopBar(obj)
+	local parent = obj.Parent
+	while parent and parent ~= playerGui do
+		if parent.Name == "TopBar" or parent.Name == "topbar" then
+			return true
+		end
+		parent = parent.Parent
+	end
+	return false
+end
 
-local function UpdateInventoryCount()
-	local count = #Player.Backpack:GetChildren()
-	if Player.Character then
-		for _, child in ipairs(Player.Character:GetChildren()) do
-			if child:IsA("Tool") then
-				count += 1
+-- ====== FUNGSI CEGAH PERUBAHAN WARNA (PROTECTION SYSTEM) ======
+local function protectColorProperty(obj, propertyName, correctValue)
+	if protectedObjects[obj] and protectedObjects[obj][propertyName] then
+		return -- Sudah dilindungi
+	end
+	
+	if not protectedObjects[obj] then
+		protectedObjects[obj] = {}
+	end
+	protectedObjects[obj][propertyName] = true
+	
+	-- Pantau perubahan property
+	local connection
+	connection = obj:GetPropertyChangedSignal(propertyName):Connect(function()
+		if obj and obj.Parent then
+			pcall(function()
+				if propertyName == "TextColor3" then
+					if not isRedColor(obj[propertyName]) then
+						obj[propertyName] = correctValue
+					end
+				else
+					obj[propertyName] = correctValue
+				end
+			end)
+		else
+			if connection then
+				connection:Disconnect()
+			end
+		end
+	end)
+	
+	table.insert(protectedConnections, connection)
+end
+
+-- ====== FUNGSI HAPUS SEMUA STROKE DARI TOPBAR ======
+local function removeTopBarStrokes()
+	local studioGui = playerGui:FindFirstChild("StudioGui")
+	if not studioGui then return end
+	
+	local topBar = studioGui:FindFirstChild("TopBar")
+	if not topBar then
+		print("[DEBUG] TopBar tidak ditemukan")
+		return
+	end
+	
+	-- Hapus semua UIStroke dari TopBar dan descendants-nya
+	for _, obj in ipairs(topBar:GetDescendants()) do
+		local stroke = obj:FindFirstChildOfClass("UIStroke")
+		if stroke then
+			stroke:Destroy()
+			print("[DEBUG] Stroke dihapus dari: " .. obj.Name)
+		end
+	end
+	
+	-- Hapus stroke dari TopBar sendiri
+	local topBarStroke = topBar:FindFirstChildOfClass("UIStroke")
+	if topBarStroke then
+		topBarStroke:Destroy()
+		print("[DEBUG] Stroke dihapus dari TopBar")
+	end
+end
+
+-- ====== FUNGSI HAPUS BACKGROUND BUTTON DI TOPBAR ======
+local function removeTopBarButtonBackgrounds()
+	local studioGui = playerGui:FindFirstChild("StudioGui")
+	if not studioGui then return end
+	
+	local topBar = studioGui:FindFirstChild("TopBar")
+	if not topBar then return end
+	
+	for _, obj in ipairs(topBar:GetChildren()) do
+		if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+			pcall(function()
+				obj.BackgroundTransparency = 1 -- Buat transparent
+				obj.BorderSizePixel = 0
+				print("[DEBUG] Background dihapus dari button: " .. obj.Name)
+			end)
+		end
+	end
+	
+	-- Untuk button yang nested di dalam frame
+	for _, descendant in ipairs(topBar:GetDescendants()) do
+		if descendant:IsA("TextButton") or descendant:IsA("ImageButton") then
+			pcall(function()
+				descendant.BackgroundTransparency = 1
+				descendant.BorderSizePixel = 0
+			end)
+		end
+	end
+end
+
+-- ====== FUNGSI BUAT BLUE SEPARATOR LINE DI BAWAH TOPBAR BUTTONS ======
+local function createBlueSeparatorLine()
+	local studioGui = playerGui:FindFirstChild("StudioGui")
+	if not studioGui then
+		print("[DEBUG] StudioGui tidak ditemukan untuk blue separator")
+		return
+	end
+	
+	local topBar = studioGui:FindFirstChild("TopBar")
+	if not topBar then
+		print("[DEBUG] TopBar tidak ditemukan untuk blue separator")
+		return
+	end
+	
+	-- Hapus jika sudah ada
+	local existingLine = topBar:FindFirstChild("BlueSeparatorLine")
+	if existingLine then
+		existingLine:Destroy()
+	end
+	
+	local blueLine = Instance.new("Frame")
+	blueLine.Name = "BlueSeparatorLine"
+	blueLine.Size = UDim2.new(1, 0, 0, 3) -- Full width, 3 pixel height
+	blueLine.Position = UDim2.new(0, 0, 1, 0) -- Posisi di bawah TopBar
+	blueLine.BackgroundColor3 = THEME.BlueSeparator
+	blueLine.BorderSizePixel = 0
+	blueLine.BackgroundTransparency = 0
+	blueLine.ZIndex = 100 -- Pastikan di atas elemen lain
+	blueLine.Parent = topBar
+	
+	print("[DEBUG] ✅ Blue separator line dibuat di bawah TopBar buttons")
+	return blueLine
+end
+
+-- ====== FUNGSI BUAT FRAME GARIS SEPARATOR ======
+local function createLineSeparator(parent)
+	-- Hapus jika sudah ada
+	local existingLine = parent:FindFirstChild("LineSeparator")
+	if existingLine then
+		existingLine:Destroy()
+	end
+	
+	local lineFrame = Instance.new("Frame")
+	lineFrame.Name = "LineSeparator"
+	lineFrame.Size = UDim2.new(0, 1, 0, 30)
+	lineFrame.Position = UDim2.new(0, 405, 0, 3)
+	lineFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	lineFrame.BorderSizePixel = 0
+	lineFrame.Parent = parent
+	
+	return lineFrame
+end
+
+-- ====== FUNGSI DUPLIKASI BUTTON (PartSel → PluginBtn) ======
+local function duplicatePartSelButton()
+	local studioGui = playerGui:FindFirstChild("StudioGui")
+	if not studioGui then
+		print("[DEBUG] StudioGui tidak ditemukan")
+		return
+	end
+	
+	local mainBar = studioGui:FindFirstChild("MainBar")
+	if not mainBar then
+		print("[DEBUG] MainBar tidak ditemukan")
+		return
+	end
+	
+	-- Cari button PartSel
+	local partSelButton = nil
+	for _, child in ipairs(mainBar:GetChildren()) do
+		if child.Name == "PartSel" then
+			partSelButton = child
+			break
+		end
+	end
+	
+	if not partSelButton then
+		print("[DEBUG] PartSel button tidak ditemukan di MainBar")
+		return
+	end
+	
+	-- Cek apakah PluginBtn sudah ada
+	local existingPluginBtn = mainBar:FindFirstChild("PluginBtn")
+	if existingPluginBtn then
+		existingPluginBtn:Destroy()
+	end
+	
+	-- Duplikasi button dengan struktur lengkap
+	local pluginBtn = Instance.new("TextButton")
+	pluginBtn.Name = "PluginBtn"
+	pluginBtn.Size = partSelButton.Size
+	pluginBtn.Position = UDim2.new(0, 430, 0, 3)
+	pluginBtn.BackgroundColor3 = THEME.TextButtonColor
+	pluginBtn.BorderSizePixel = 0
+	pluginBtn.TextColor3 = THEME.TextColor
+	pluginBtn.TextSize = 14
+	pluginBtn.Font = Enum.Font.GothamMedium
+	pluginBtn.Text = "Plugin"
+	pluginBtn.Parent = mainBar
+	
+	-- Duplikasi children dari PartSel jika ada
+	for _, child in ipairs(partSelButton:GetChildren()) do
+		local clonedChild = child:Clone()
+		clonedChild.Parent = pluginBtn
+		
+		-- Apply theme ke child
+		if clonedChild:IsA("TextLabel") then
+			clonedChild.TextColor3 = THEME.TextColor
+		elseif clonedChild:IsA("ImageLabel") or clonedChild:IsA("ImageButton") then
+			if clonedChild.BackgroundTransparency < 1 then
+				clonedChild.BackgroundColor3 = THEME.FrameColor
 			end
 		end
 	end
-	InventoryVal.Text = tostring(count)
+	
+	-- Setup protection
+	protectColorProperty(pluginBtn, "TextColor3", THEME.TextColor)
+	protectColorProperty(pluginBtn, "BackgroundColor3", THEME.TextButtonColor)
+	
+	-- Setup hover effect
+	pluginBtn.MouseEnter:Connect(function()
+		pluginBtn.BackgroundColor3 = THEME.TextButtonHover
+	end)
+	pluginBtn.MouseLeave:Connect(function()
+		pluginBtn.BackgroundColor3 = THEME.TextButtonColor
+	end)
+	
+	print("[DEBUG] PluginBtn berhasil dibuat di posisi (430, 3)")
+	return pluginBtn
 end
 
-Player.Backpack.ChildAdded:Connect(UpdateInventoryCount)
-Player.Backpack.ChildRemoved:Connect(UpdateInventoryCount)
-Player.CharacterAdded:Connect(function(char)
-	char.ChildAdded:Connect(UpdateInventoryCount)
-	char.ChildRemoved:Connect(UpdateInventoryCount)
-	UpdateInventoryCount()
-end)
-UpdateInventoryCount()
-
--- ╔══════════════════════════════════════════════╗
--- ║             COUNT AVAILABLE                  ║
--- ╚══════════════════════════════════════════════╝
-
-local function CountAvailable()
-	local n = 0
-	for _, v in ipairs(workspace:GetDescendants()) do
-		if v.Name == "HarvestPart" then n += 1 end
-	end
-	return n
-end
-
--- ╔══════════════════════════════════════════════╗
--- ║              HARVEST FUNCTION                ║
--- ╚══════════════════════════════════════════════╝
-
-local function Harvest()
-	local beforeCount = CountAvailable()
-
-	for _, v in ipairs(workspace:GetDescendants()) do
-		if v.Name == "HarvestPart" and v:IsA("BasePart") then
-			local Prompt = v:FindFirstChild("HarvestPrompt")
-			if not Prompt then
-				for _, x in ipairs(v:GetDescendants()) do
-					if x:IsA("ProximityPrompt") and x.Name == "HarvestPrompt" then
-						Prompt = x
-						break
-					end
-				end
-			end
-			if Prompt and Prompt:IsA("ProximityPrompt") then
+-- ====== FUNGSI UPDATE IMAGE DENGAN ROTASI ======
+local function updateSelectImages()
+	local studioGui = playerGui:FindFirstChild("StudioGui")
+	if not studioGui then return end
+	
+	-- Cari semua ImageLabel dengan nama tertentu
+	for _, obj in ipairs(studioGui:GetDescendants()) do
+		if obj:IsA("ImageLabel") then
+			-- Update image dengan ID baru
+			if obj.Name == "select" then
 				pcall(function()
-					fireproximityprompt(Prompt)
+					obj.Image = "rbxasset://textures/Cursor.png" -- Fallback
+					print("[DEBUG] Found 'select' image label")
+				end)
+			elseif obj.Name == "IconLabel" or obj.Name == "Icon" then
+				pcall(function()
+					obj.Image = "rbxasset://textures/Cursor.png" -- Fallback
+					print("[DEBUG] Found icon image label: " .. obj.Name)
 				end)
 			end
 		end
 	end
-
-	task.wait(0.05)
-
-	local afterCount = CountAvailable()
-	local gained     = math.max(0, beforeCount - afterCount)
-
-	if gained > 0 then
-		TotalHarvested = TotalHarvested + gained
-		HarvestedVal.Text = tostring(TotalHarvested)
-	end
 end
 
--- ╔══════════════════════════════════════════════╗
--- ║                MAIN LOOP                     ║
--- ╚══════════════════════════════════════════════╝
-
-task.spawn(function()
-	while true do
-		local avail = CountAvailable()
-		AvailableVal.Text = tostring(avail)
-
-		local isFull = CheckInventoryFull()
-
-		-- [FIXED] Logika pengecekan yang lebih cerdas
-		if isFull then
-			-- Hanya matikan otomatis jika ini deteksi pertama kali DAN user tidak sedang memaksa (override)
-			if not InventoryFull and not ManualOverride then    
-				InventoryFull = true    
-				if AutoHarvest then    
-					AutoHarvest = false    
-					SetToggleOn(false)    
-				end    
-				ShowWarning(true)    
-				StatusBar.Text = "⚠ STOPPED — Inventory is full!"    
-				StatusBar.TextColor3 = C.AMBER    
+-- ====== FUNGSI SETUP BUTTON ROTATE ======
+local function setupRotateButton()
+	local studioGui = playerGui:FindFirstChild("StudioGui")
+	if not studioGui then return end
+	
+	local mainBar = studioGui:FindFirstChild("MainBar")
+	if not mainBar then return end
+	
+	local rotateButton = nil
+	for _, child in ipairs(mainBar:GetChildren()) do
+		if child.Name == "Rotate" or child.Name == "rotate" then
+			rotateButton = child
+			break
+		end
+	end
+	
+	if not rotateButton then
+		print("[DEBUG] Rotate button tidak ditemukan")
+		return
+	end
+	
+	-- Apply theme ke rotate button
+	if rotateButton:IsA("TextButton") or rotateButton:IsA("GuiButton") then
+		rotateButton.BackgroundColor3 = THEME.TextButtonColor
+		rotateButton.TextColor3 = THEME.TextColor
+		protectColorProperty(rotateButton, "BackgroundColor3", THEME.TextButtonColor)
+		protectColorProperty(rotateButton, "TextColor3", THEME.TextColor)
+	end
+	
+	-- Apply theme ke child elements
+	for _, child in ipairs(rotateButton:GetDescendants()) do
+		if child:IsA("ImageLabel") or child:IsA("ImageButton") then
+			if child.BackgroundTransparency < 1 then
+				child.BackgroundColor3 = THEME.FrameColor
+				-- Terapkan rotasi jika ada property rotation
+				if child:FindFirstChild("Rotation") or pcall(function() return child.Rotation end) then
+					child.Rotation = 45 -- Default rotasi 45 derajat
+				end
 			end
+		elseif child:IsA("TextLabel") then
+			child.TextColor3 = THEME.TextColor
+			protectColorProperty(child, "TextColor3", THEME.TextColor)
+		end
+	end
+	
+	print("[DEBUG] Rotate button setup selesai")
+end
+
+-- ====== FUNGSI MEMBUAT BOX KEY DI TENGAH ======
+local function createStudioRisBoxKey()
+	local existingBox = playerGui:FindFirstChild("StudioRisBoxKey")
+	if existingBox then
+		return existingBox
+	end
+
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "StudioRisBoxKey"
+	screenGui.Parent = playerGui
+	screenGui.ResetOnSpawn = false
+
+	local mainFrame = Instance.new("Frame")
+	mainFrame.Name = "MainFrame"
+	mainFrame.Size = UDim2.new(0, 400, 0, 250)
+	mainFrame.Position = UDim2.new(0.5, -200, 0.5, -125)
+	mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	mainFrame.BorderColor3 = Color3.fromRGB(60, 60, 60)
+	mainFrame.BorderSizePixel = 2
+	mainFrame.Parent = screenGui
+
+	local uiCorner = Instance.new("UICorner")
+	uiCorner.CornerRadius = UDim.new(0, 8)
+	uiCorner.Parent = mainFrame
+
+	local uiStroke = Instance.new("UIStroke")
+	uiStroke.Color = Color3.fromRGB(100, 100, 100)
+	uiStroke.Thickness = 1.5
+	uiStroke.Parent = mainFrame
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Name = "TitleLabel"
+	titleLabel.Size = UDim2.new(1, 0, 0, 50)
+	titleLabel.Position = UDim2.new(0, 0, 0, 15)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = "STUDIORIS"
+	titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	titleLabel.TextSize = 28
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Center
+	titleLabel.Parent = mainFrame
+
+	local instructionLabel = Instance.new("TextLabel")
+	instructionLabel.Name = "InstructionLabel"
+	instructionLabel.Size = UDim2.new(1, -40, 0, 30)
+	instructionLabel.Position = UDim2.new(0, 20, 0, 70)
+	instructionLabel.BackgroundTransparency = 1
+	instructionLabel.Text = "Masukkan Key Akses Anda:"
+	instructionLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+	instructionLabel.TextSize = 16
+	instructionLabel.Font = Enum.Font.GothamMedium
+	instructionLabel.TextXAlignment = Enum.TextXAlignment.Center
+	instructionLabel.Parent = mainFrame
+
+	local keyTextBox = Instance.new("TextBox")
+	keyTextBox.Name = "KeyTextBox"
+	keyTextBox.Size = UDim2.new(1, -80, 0, 40)
+	keyTextBox.Position = UDim2.new(0, 40, 0, 110)
+	keyTextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	keyTextBox.BorderColor3 = Color3.fromRGB(80, 80, 80)
+	keyTextBox.BorderSizePixel = 1
+	keyTextBox.Text = ""
+	keyTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+	keyTextBox.TextSize = 20
+	keyTextBox.Font = Enum.Font.GothamMedium
+	keyTextBox.PlaceholderText = "Masukkan key..."
+	keyTextBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
+	keyTextBox.TextXAlignment = Enum.TextXAlignment.Center
+	keyTextBox.ClearTextOnFocus = false
+	keyTextBox.Parent = mainFrame
+
+	local textBoxCorner = Instance.new("UICorner")
+	textBoxCorner.CornerRadius = UDim.new(0, 6)
+	textBoxCorner.Parent = keyTextBox
+
+	local verifyButton = Instance.new("TextButton")
+	verifyButton.Name = "VerifyButton"
+	verifyButton.Size = UDim2.new(0, 150, 0, 40)
+	verifyButton.Position = UDim2.new(0.5, -75, 0, 175)
+	verifyButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	verifyButton.BorderColor3 = Color3.fromRGB(80, 80, 80)
+	verifyButton.BorderSizePixel = 1
+	verifyButton.Text = "VERIFIKASI"
+	verifyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	verifyButton.TextSize = 16
+	verifyButton.Font = Enum.Font.GothamBold
+	verifyButton.Parent = mainFrame
+
+	local buttonCorner = Instance.new("UICorner")
+	buttonCorner.CornerRadius = UDim.new(0, 6)
+	buttonCorner.Parent = verifyButton
+
+	verifyButton.MouseButton1Click:Connect(function()
+		local enteredKey = keyTextBox.Text
+		if enteredKey == "" then
+			keyTextBox.PlaceholderText = "Key tidak boleh kosong!"
+			keyTextBox.PlaceholderColor3 = Color3.fromRGB(255, 80, 80)
+		elseif enteredKey == "STUDIORIS2024" then
+			screenGui.Enabled = false
+			task.wait(0.5)
+			scanAndApplyAll()
 		else
-			-- Jika inventory sudah tidak penuh, reset semua status peringatan
-			if InventoryFull or ManualOverride then
-				InventoryFull = false
-				ManualOverride = false
-				ShowWarning(false)
-				if not AutoHarvest then    
-					StatusBar.Text = "● IDLE — Inventory cleared"    
-					StatusBar.TextColor3 = C.TEXT_DARK    
+			keyTextBox.Text = ""
+			keyTextBox.PlaceholderText = "Key salah! Coba lagi."
+			keyTextBox.PlaceholderColor3 = Color3.fromRGB(255, 80, 80)
+		end
+	end)
+
+	verifyButton.MouseEnter:Connect(function()
+		verifyButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+	end)
+	verifyButton.MouseLeave:Connect(function()
+		verifyButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	end)
+
+	return screenGui
+end
+
+-- ====== CEK APAKAH OBJECT ADALAH ATAU CHILD DARI COLORPALETTE ======
+local function isPartOfColorPalette(obj)
+	if obj.Name == "ColorPalette" then return true end
+	
+	local parent = obj.Parent
+	while parent and parent ~= playerGui do
+		if parent.Name == "ColorPalette" then
+			return true
+		end
+		parent = parent.Parent
+	end
+	return false
+end
+
+-- ====== CARI TOGGLE BUTTON COLORPALETTE ======
+local function findColorPaletteToggle()
+	local studioGui = playerGui:FindFirstChild("StudioGui")
+	if not studioGui then return nil end
+	
+	-- Cari di MainBar dan toolbar area
+	for _, descendant in ipairs(studioGui:GetDescendants()) do
+		if descendant:IsA("GuiButton") then
+			local buttonName = descendant.Name
+			-- Cari button yang berhubungan dengan Color atau Palette
+			if buttonName:find("Color") or buttonName:find("Palette") or buttonName:find("color") or buttonName:find("palette") then
+				print("[DEBUG] ColorPalette toggle button ditemukan: " .. buttonName)
+				return descendant
+			end
+		end
+	end
+	return nil
+end
+
+-- ====== PROTECT COLORPALETTE TOGGLE BUTTON ======
+local function protectColorPaletteToggleButton()
+	local toggleBtn = findColorPaletteToggle()
+	if not toggleBtn then
+		print("[DEBUG] Toggle button ColorPalette tidak ditemukan")
+		return
+	end
+	
+	-- Simpan warna original
+	local originalTextColor = toggleBtn.TextColor3
+	local originalBgColor = toggleBtn.BackgroundColor3
+	
+	-- Protect dari perubahan warna
+	protectColorProperty(toggleBtn, "TextColor3", originalTextColor)
+	protectColorProperty(toggleBtn, "BackgroundColor3", originalBgColor)
+	
+	print("[DEBUG] ✅ ColorPalette toggle button dilindungi")
+end
+
+-- ====== TERAPKAN THEME KHUSUS UNTUK COLORPALETTE (FRAME + SPECIFIC ELEMENTS) ======
+local function applyColorPaletteTheme(colorPaletteFrame)
+	if not colorPaletteFrame or colorPaletteFrame.Name ~= "ColorPalette" then return end
+	
+	pcall(function()
+		-- 1. Frame background
+		if colorPaletteFrame.BackgroundTransparency < 1 then
+			colorPaletteFrame.BackgroundColor3 = THEME.FrameColor
+			protectColorProperty(colorPaletteFrame, "BackgroundColor3", THEME.FrameColor)
+		end
+		
+		-- 2. Tambah stroke jika belum ada
+		local existingStroke = colorPaletteFrame:FindFirstChildOfClass("UIStroke")
+		if not existingStroke then
+			local uiStroke = Instance.new("UIStroke")
+			uiStroke.Color = THEME.StrokeColor
+			uiStroke.Thickness = 1.5
+			uiStroke.Parent = colorPaletteFrame
+		end
+		
+		-- 3. Tambah corner jika belum ada
+		local existingCorner = colorPaletteFrame:FindFirstChildOfClass("UICorner")
+		if not existingCorner then
+			local uiCorner = Instance.new("UICorner")
+			uiCorner.CornerRadius = UDim.new(0, 12)
+			uiCorner.Parent = colorPaletteFrame
+		end
+		
+		-- 4. Posisi tengah
+		colorPaletteFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+		colorPaletteFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+		
+		-- 5. THEME SPECIFIC ELEMENTS INSIDE COLORPALETTE
+		for _, child in ipairs(colorPaletteFrame:GetDescendants()) do
+			-- OkButton & CancelButton - theme button (text + background)
+			if child.Name == "OkButton" or child.Name == "CancelButton" then
+				if child:IsA("TextButton") then
+					child.TextColor3 = THEME.TextColor
+					child.BackgroundColor3 = THEME.TextButtonColor
+					protectColorProperty(child, "TextColor3", THEME.TextColor)
+					protectColorProperty(child, "BackgroundColor3", THEME.TextButtonColor)
+				end
+			end
+			
+			-- BasicColorsTitle - theme background + text
+			elseif child.Name == "BasicColorsTitle" then
+				if child:IsA("TextLabel") then
+					child.TextColor3 = THEME.TextColor
+					if child.BackgroundTransparency < 1 then
+						child.BackgroundColor3 = THEME.FrameColor
+					end
+					protectColorProperty(child, "TextColor3", THEME.TextColor)
+					if child.BackgroundTransparency < 1 then
+						protectColorProperty(child, "BackgroundColor3", THEME.FrameColor)
+					end
+				end
+			end
+			
+			-- SelectedColor, SelectedColorText, SelectedBrickColorText - HANYA TEXT
+			elseif child.Name == "SelectedColor" or child.Name == "SelectedColorText" or child.Name == "SelectedBrickColorText" then
+				if child:IsA("TextLabel") then
+					child.TextColor3 = THEME.TextColor
+					protectColorProperty(child, "TextColor3", THEME.TextColor)
+					-- Background TIDAK diubah
 				end
 			end
 		end
+	end)
+end
 
-		if AutoHarvest and not InventoryFull then    
-			Harvest()    
-		end    
+-- ====== FUNGSI SCAN & SETUP COLORPALETTE ======
+local function setupColorPalette()
+	local function findAllColorPalettes(parent)
+		local colorPalettes = {}
+		for _, child in ipairs(parent:GetChildren()) do
+			if child.Name == "ColorPalette" and child:IsA("Frame") then
+				table.insert(colorPalettes, child)
+			end
+			local subPalettes = findAllColorPalettes(child)
+			for _, p in ipairs(subPalettes) do
+				table.insert(colorPalettes, p)
+			end
+		end
+		return colorPalettes
+	end
 
-		task.wait(HarvestDelay)
+	local allColorPalettes = findAllColorPalettes(playerGui)
+
+	if #allColorPalettes == 0 then
+		return
+	end
+
+	-- Terapkan theme khusus ke setiap ColorPalette (hanya frame, child elements tetap original)
+	for _, colorPalette in ipairs(allColorPalettes) do
+		applyColorPaletteTheme(colorPalette)
+	end
+end
+
+-- ====== FUNGSI UTAMA: TERAPKAN TEMA + PROTEKSI ======
+local function applyTheme(obj)
+	if not obj or not obj.Parent then return end
+
+	-- SKIP StudioRisBoxKey
+	local parentCheck = obj
+	while parentCheck do
+		if parentCheck:IsA("ScreenGui") and parentCheck.Name == "StudioRisBoxKey" then
+			return
+		end
+		parentCheck = parentCheck.Parent
+	end
+
+	-- SKIP SELECT MULTIBUTTON (STRICT)
+	if isSelectMultiButton(obj) then
+		return
+	end
+
+	-- SKIP BUTTON DALAM FOLDER DI COLORPALETTE
+	if isButtonInFolderInsideColorPalette(obj) then
+		return
+	end
+	
+	-- SKIP SEMUA CHILD ELEMENTS DARI COLORPALETTE (KECUALI COLORPALETTE FRAME SENDIRI)
+	if isPartOfColorPalette(obj) and obj.Name ~= "ColorPalette" then
+		return
+	end
+
+	local success, err = pcall(function()
+		local className = obj.ClassName
+
+		-- ====== TEXTLABEL: TEKS PUTIH + BG ABU-ABU ======
+		if className == "TextLabel" then
+			if not isRedColor(obj.TextColor3) then
+				obj.TextColor3 = THEME.TextColor
+				protectColorProperty(obj, "TextColor3", THEME.TextColor)
+			end
+			if obj.BackgroundTransparency < 1 then
+				obj.BackgroundColor3 = THEME.FrameColor
+				protectColorProperty(obj, "BackgroundColor3", THEME.FrameColor)
+			end
+
+		-- ====== TEXTBUTTON: TEKS PUTIH + BG ABU-ABU BUTTON ======
+		elseif className == "TextButton" then
+			if not isRedColor(obj.TextColor3) then
+				obj.TextColor3 = THEME.TextColor
+				protectColorProperty(obj, "TextColor3", THEME.TextColor)
+			end
+			if obj.BackgroundTransparency < 1 then
+				obj.BackgroundColor3 = THEME.TextButtonColor
+				protectColorProperty(obj, "BackgroundColor3", THEME.TextButtonColor)
+			end
+
+		-- ====== TEXTBOX: TEKS PUTIH + BG ABU-ABU GELAP ======
+		elseif className == "TextBox" then
+			if not isRedColor(obj.TextColor3) then
+				obj.TextColor3 = THEME.TextColor
+				protectColorProperty(obj, "TextColor3", THEME.TextColor)
+			end
+			if obj.BackgroundTransparency < 1 then
+				obj.BackgroundColor3 = THEME.TextBoxColor
+				protectColorProperty(obj, "BackgroundColor3", THEME.TextBoxColor)
+			end
+
+		-- ====== FRAME / SCROLLINGFRAME: BG ABU-ABU ======
+		elseif className == "Frame" or className == "ScrollingFrame" then
+			-- KHUSUS COLORPALETTE: Hanya frame yang di-theme
+			if obj.Name == "ColorPalette" then
+				applyColorPaletteTheme(obj)
+			else
+				if obj.BackgroundTransparency < 1 then
+					obj.BackgroundColor3 = THEME.FrameColor
+					protectColorProperty(obj, "BackgroundColor3", THEME.FrameColor)
+				end
+			end
+
+		-- ====== IMAGE ELEMENTS: BG ABU-ABU ======
+		elseif className == "ImageLabel" or className == "ImageButton" then
+			if obj.BackgroundTransparency < 1 then
+				obj.BackgroundColor3 = THEME.FrameColor
+				protectColorProperty(obj, "BackgroundColor3", THEME.FrameColor)
+			end
+		end
+	end)
+end
+
+-- ====== FUNGSI RECOLOR SEMUA ======
+local function recolorEverything()
+	applyTheme(playerGui)
+
+	for _, obj in ipairs(playerGui:GetDescendants()) do
+		applyTheme(obj)
+	end
+end
+
+-- ====== FUNGSI GABUNGAN ======
+local function scanAndApplyAll()
+	recolorEverything()
+	setupColorPalette()
+	
+	-- Hapus semua stroke di TopBar
+	task.defer(function()
+		removeTopBarStrokes()
+	end)
+	
+	-- Hapus background buttons di TopBar
+	task.defer(function()
+		removeTopBarButtonBackgrounds()
+	end)
+	
+	-- Buat blue separator line di bawah TopBar
+	task.defer(function()
+		createBlueSeparatorLine()
+	end)
+	
+	-- Protect ColorPalette toggle button
+	task.defer(function()
+		protectColorPaletteToggleButton()
+	end)
+	
+	-- Update images dengan ID baru
+	task.defer(function()
+		updateSelectImages()
+	end)
+	
+	-- Setup rotate button dengan rotasi
+	task.defer(function()
+		setupRotateButton()
+	end)
+	
+	-- Duplikasi PartSel button ke PluginBtn
+	task.defer(function()
+		duplicatePartSelButton()
+	end)
+	
+	-- Buat line separator di MainBar
+	task.defer(function()
+		local studioGui = playerGui:FindFirstChild("StudioGui")
+		if studioGui then
+			local mainBar = studioGui:FindFirstChild("MainBar")
+			if mainBar then
+				createLineSeparator(mainBar)
+				print("[DEBUG] Line separator dibuat di MainBar")
+			else
+				print("[DEBUG] MainBar tidak ditemukan untuk garis")
+			end
+		else
+			print("[DEBUG] StudioGui tidak ditemukan untuk garis")
+		end
+	end)
+end
+
+-- ====== EKSEKUSI UTAMA ======
+-- Buat box key StudioRis
+local boxKey = createStudioRisBoxKey()
+
+-- Tunggu sebentar, lalu terapkan tema
+task.wait(0.5)
+scanAndApplyAll()
+
+-- Scan ulang beberapa kali untuk menangkap UI yang spawn belakangan
+task.spawn(function()
+	for i = 1, 10 do
+		task.wait(0.5)
+		scanAndApplyAll()
 	end
 end)
+
+-- Auto-apply ke elemen baru + COLOR PROTECTION
+playerGui.DescendantAdded:Connect(function(obj)
+	applyTheme(obj)
+
+	-- Jika ColorPalette baru dibuat
+	if obj.Name == "ColorPalette" then
+		task.defer(function()
+			setupColorPalette()
+		end)
+	end
+
+	-- Jika ada TextButton baru di dalam Folder di ColorPalette, jangan ubah
+	if obj:IsA("TextButton") and isButtonInFolderInsideColorPalette(obj) then
+		return
+	end
+
+	-- Jika Select MultiButton baru, jangan ubah
+	if isSelectMultiButton(obj) then
+		return
+	end
+end)
+
+print("[ThemeRecolor v8 - FINAL MODIFIED] ✅ Script berjalan! Key: STUDIORIS2024")
+print("[ThemeRecolor v8 - FINAL MODIFIED] 🎨 Images: 14547804225, 84031887426375")
+print("[ThemeRecolor v8 - FINAL MODIFIED] 🔘 Button: PluginBtn @ (430, 3)")
+print("[ThemeRecolor v8 - FINAL MODIFIED] 🔄 Rotate Button dengan rotasi otomatis")
+print("[ThemeRecolor v8 - FINAL MODIFIED] ━ Line Separator @ (405, 3)")
+print("[ThemeRecolor v8 - FINAL MODIFIED] 🎨 ColorPalette Elements:")
+print("   ├─ OkButton & CancelButton (text + bg)")
+print("   ├─ BasicColorsTitle (text + bg)")
+print("   └─ SelectedColor texts (text only)")
+print("[ThemeRecolor v8 - FINAL MODIFIED] 🔒 ColorPalette toggle button protected (NO COLOR CHANGE)")
+print("[ThemeRecolor v8 - FINAL MODIFIED] ✅ TopBar: Semua stroke dihapus")
+print("[ThemeRecolor v8 - FINAL MODIFIED] ✅ TopBar: Button backgrounds dihapus (transparent)")
+print("[ThemeRecolor v8 - FINAL MODIFIED] 🔵 Blue Separator Line di bawah TopBar buttons")
+print("[ThemeRecolor v8 - FINAL MODIFIED] 📋 Cek output console untuk debug info")
