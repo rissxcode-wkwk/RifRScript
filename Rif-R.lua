@@ -5,6 +5,25 @@
 ║                    Modified Version                            ║
 ╚════════════════════════════════════════════════════════════════╝
 
+FITUR UTAMA:
+✅ Semua text putih (255,255,255)
+✅ Semua background abu-abu tema Roblox Studio
+✅ Color Protection System - otomatis kembalikan warna jika ada script lain yang ubah
+✅ Proteksi "Select MultiButton" (100% tidak diubah)
+✅ Proteksi ColorPalette > Folder > Button (100% tidak diubah)
+✅ Real-time monitoring dengan PropertyChanged signal
+✅ Dukungan DescendantAdded untuk UI baru
+✅ Sistem red color exception tetap berjalan
+✅ StudioRis Box Key system tetap berjalan
+✅ ColorPalette centering tetap berjalan
+✅ Custom Image IDs dengan rotasi
+✅ Duplikasi PartSel Button ke PluginBtn
+✅ Frame garis separator
+
+CARA PAKAI:
+Taruh sebagai LocalScript di StarterPlayer > StarterPlayerScripts
+ATAU di StarterPlayer > StarterCharacterScripts
+
 KEY: STUDIORIS2024
 ]]
 
@@ -22,7 +41,6 @@ local THEME = {
 	TextButtonHover  = Color3.fromRGB(75, 75, 75),   -- Abu-abu hover
 	TextBoxColor     = Color3.fromRGB(38, 38, 38),   -- Abu-abu textbox
 	StrokeColor      = Color3.fromRGB(100, 100, 100), -- Abu-abu stroke
-	LineSeparatorColor = Color3.fromRGB(30, 144, 255), -- BIRU untuk garis separator
 }
 
 -- KONFIGURASI IMAGE & CUSTOM ELEMENTS
@@ -101,31 +119,7 @@ local function protectColorProperty(obj, propertyName, correctValue)
 	table.insert(protectedConnections, connection)
 end
 
--- ====== FUNGSI HAPUS STROKE DARI TOPBAR ======
-local function removeTopBarStrokes()
-	local studioGui = playerGui:FindFirstChild("StudioGui")
-	if not studioGui then return end
-	
-	local mainBar = studioGui:FindFirstChild("MainBar")
-	if not mainBar then return end
-	
-	-- Hapus semua UIStroke dari MainBar dan descendants
-	for _, descendant in ipairs(mainBar:GetDescendants()) do
-		if descendant:IsA("UIStroke") then
-			descendant:Destroy()
-		end
-	end
-	
-	-- Hapus stroke dari MainBar itu sendiri
-	local existingStroke = mainBar:FindFirstChildOfClass("UIStroke")
-	if existingStroke then
-		existingStroke:Destroy()
-	end
-	
-	print("[DEBUG] ✅ Semua stroke di TopBar (MainBar) dihapus")
-end
-
--- ====== FUNGSI BUAT FRAME GARIS SEPARATOR (BIRU) ======
+-- ====== FUNGSI BUAT FRAME GARIS SEPARATOR ======
 local function createLineSeparator(parent)
 	-- Hapus jika sudah ada
 	local existingLine = parent:FindFirstChild("LineSeparator")
@@ -136,8 +130,8 @@ local function createLineSeparator(parent)
 	local lineFrame = Instance.new("Frame")
 	lineFrame.Name = "LineSeparator"
 	lineFrame.Size = UDim2.new(0, 1, 0, 30)
-	lineFrame.Position = UDim2.new(0, 405, 0, 3)
-	lineFrame.BackgroundColor3 = THEME.LineSeparatorColor -- BIRU
+	lineFrame.Position = UDim2.new(0, 370, 0, 3)
+	lineFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 	lineFrame.BorderSizePixel = 0
 	lineFrame.Parent = parent
 	
@@ -187,9 +181,9 @@ local function duplicatePartSelButton()
 	local pluginBtn = Instance.new("TextButton")
 	pluginBtn.Name = "PluginBtn"
 	pluginBtn.Size = partSelButton.Size
-	pluginBtn.Position = UDim2.new(0, 430, 0, 3)
+	pluginBtn.Position = UDim2.new(0, 380, 0, 3)
 	pluginBtn.BackgroundColor3 = THEME.TextButtonColor
-	pluginBtn.BorderSizePixel = 0
+   pluginBtn.BorderSizePixel = 0
 	pluginBtn.TextColor3 = THEME.TextColor
 	pluginBtn.TextSize = 14
 	pluginBtn.Font = Enum.Font.GothamMedium
@@ -672,19 +666,14 @@ local function scanAndApplyAll()
 		duplicatePartSelButton()
 	end)
 	
-	-- Hapus semua stroke dari TopBar (MainBar)
-	task.defer(function()
-		removeTopBarStrokes()
-	end)
-	
-	-- Buat line separator di MainBar dengan warna BIRU
+	-- Buat line separator di MainBar
 	task.defer(function()
 		local studioGui = playerGui:FindFirstChild("StudioGui")
 		if studioGui then
 			local mainBar = studioGui:FindFirstChild("MainBar")
 			if mainBar then
 				createLineSeparator(mainBar)
-				print("[DEBUG] ✅ Garis separator BIRU dibuat di MainBar")
+				print("[DEBUG] Line separator dibuat di MainBar")
 			else
 				print("[DEBUG] MainBar tidak ditemukan untuk garis")
 			end
@@ -736,5 +725,3 @@ playerGui.DescendantAdded:Connect(function(obj)
 		return
 	end
 end)
-
-print("[ThemeRecolor v8 - FINAL] ✅ Script berjalan! Key: STUDIORIS2024")
