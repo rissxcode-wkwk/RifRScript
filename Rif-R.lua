@@ -727,6 +727,89 @@ playerGui.DescendantAdded:Connect(function(obj)
 	end
 end)
 
+-- ====== CUSTOM IMAGE + PLIGUIN BUTTON ======
+
+task.defer(function()
+
+	-- Ganti semua ImageLabel "select"
+	for _, v in ipairs(playerGui:GetDescendants()) do
+		if v:IsA("ImageLabel") and v.Name == "select" then
+			v.Image = "rbxassetid://14547804225"
+		end
+	end
+
+	-- Ganti semua ImageLabel "rotate"
+	for _, v in ipairs(playerGui:GetDescendants()) do
+		if v:IsA("ImageLabel") and v.Name == "rotate" then
+			v.Image = "rbxassetid://84031887426375"
+		end
+	end
+
+	-- Cari MainBar dimanapun
+	local mainBar
+	for _, v in ipairs(playerGui:GetDescendants()) do
+		if v:IsA("Frame") and v.Name == "MainBar" then
+			mainBar = v
+			break
+		end
+	end
+
+	if not mainBar then
+		warn("[Plugin] MainBar tidak ditemukan")
+		return
+	end
+
+	-- Garis pemisah
+	if not mainBar:FindFirstChild("PluginSeparator") then
+		local line = Instance.new("Frame")
+		line.Name = "PluginSeparator"
+		line.Parent = mainBar
+		line.Position = UDim2.new(0, 37p, 0, 3)
+		line.Size = UDim2.new(0, 2, 0, 30)
+		line.BorderSizePixel = 0
+		line.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	end
+
+	-- Cari partsel
+	local partsel
+	for _, v in ipairs(mainBar:GetDescendants()) do
+		if v.Name == "partsel" and (v:IsA("TextButton") or v:IsA("ImageButton")) then
+			partsel = v
+			break
+		end
+	end
+
+	if not partsel then
+		warn("[Plugin] partsel tidak ditemukan")
+		return
+	end
+
+	-- Clone tombol
+	if not mainBar:FindFirstChild("pliguinbtn") then
+		local clone = partsel:Clone()
+
+		clone.Name = "pliguinbtn"
+		clone.Parent = mainBar
+		clone.Position = UDim2.new(0, 380, 0, 3)
+
+		if clone:IsA("TextButton") then
+			clone.Text = "pliguin"
+		end
+
+		local txt = clone:FindFirstChildWhichIsA("TextLabel", true)
+		if txt then
+			txt.Text = "pliguin"
+		end
+
+		for _, d in ipairs(clone:GetDescendants()) do
+			if d:IsA("Script") or d:IsA("LocalScript") then
+				d:Destroy()
+			end
+		end
+	end
+
+end)
+
 print("[ThemeRecolor v8 - FINAL] ✅ Script berjalan! Key: STUDIORIS2024")
 print("[ThemeRecolor v8 - FINAL] 🎨 Images: 14547804225, 84031887426375")
 print("[ThemeRecolor v8 - FINAL] 🔘 Button: PluginBtn @ (430, 3)")
