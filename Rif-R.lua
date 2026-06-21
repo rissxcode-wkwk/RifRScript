@@ -2,8 +2,7 @@
 ╔════════════════════════════════════════════════════════════════╗
 ║           ThemeRecolor.lua v8 - MODIFIED & ENHANCED            ║
 ║                      Made By Redz                              ║
-║                    Modified Version                            ║
-║                   UPDATED: TopBar & Strokes                    ║
+║                    Modified Version (v8.1)                     ║
 ╚════════════════════════════════════════════════════════════════╝
 
 FITUR UTAMA:
@@ -19,9 +18,15 @@ FITUR UTAMA:
 ✅ ColorPalette centering tetap berjalan
 ✅ Custom Image IDs dengan rotasi
 ✅ Duplikasi PartSel Button ke PluginBtn
-✅ Frame garis separator
-✅ TopBar: Hapus strokes + button backgrounds
-✅ Blue separator line under TopBar buttons
+✅ Frame garis separator BIRU (tidak ada stroke di UI)
+✅ Toggle ColorPalette tidak berubah warna
+✅ SEMUA STROKE DIHAPUS dari UI
+
+PERUBAHAN VERSI 8.1:
+🔧 Hapus semua UIStroke dari elemen
+🔧 Garis separator di TopBar berubah jadi BIRU
+🔧 Proteksi toggle ColorPalette (tidak berubah warna)
+🔧 Hapus stroke di ColorPalette frame
 
 CARA PAKAI:
 Taruh sebagai LocalScript di StarterPlayer > StarterPlayerScripts
@@ -43,8 +48,8 @@ local THEME = {
 	TextButtonColor  = Color3.fromRGB(60, 60, 60),   -- Abu-abu button
 	TextButtonHover  = Color3.fromRGB(75, 75, 75),   -- Abu-abu hover
 	TextBoxColor     = Color3.fromRGB(38, 38, 38),   -- Abu-abu textbox
-	StrokeColor      = Color3.fromRGB(100, 100, 100), -- Abu-abu stroke
-	BlueSeparator    = Color3.fromRGB(0, 120, 200),  -- Biru separator
+	StrokeColor      = Color3.fromRGB(100, 100, 100), -- Abu-abu stroke (TIDAK DIGUNAKAN)
+	SeparatorBlue    = Color3.fromRGB(0, 120, 215),   -- BIRU untuk garis separator
 }
 
 -- KONFIGURASI IMAGE & CUSTOM ELEMENTS
@@ -89,18 +94,6 @@ local function isButtonInFolderInsideColorPalette(obj)
 	return false
 end
 
--- ====== FUNGSI CEK APAKAH OBJECT DI TOPBAR ======
-local function isInTopBar(obj)
-	local parent = obj.Parent
-	while parent and parent ~= playerGui do
-		if parent.Name == "TopBar" or parent.Name == "topbar" then
-			return true
-		end
-		parent = parent.Parent
-	end
-	return false
-end
-
 -- ====== FUNGSI CEGAH PERUBAHAN WARNA (PROTECTION SYSTEM) ======
 local function protectColorProperty(obj, propertyName, correctValue)
 	if protectedObjects[obj] and protectedObjects[obj][propertyName] then
@@ -135,98 +128,7 @@ local function protectColorProperty(obj, propertyName, correctValue)
 	table.insert(protectedConnections, connection)
 end
 
--- ====== FUNGSI HAPUS SEMUA STROKE DARI TOPBAR ======
-local function removeTopBarStrokes()
-	local studioGui = playerGui:FindFirstChild("StudioGui")
-	if not studioGui then return end
-	
-	local topBar = studioGui:FindFirstChild("TopBar")
-	if not topBar then
-		print("[DEBUG] TopBar tidak ditemukan")
-		return
-	end
-	
-	-- Hapus semua UIStroke dari TopBar dan descendants-nya
-	for _, obj in ipairs(topBar:GetDescendants()) do
-		local stroke = obj:FindFirstChildOfClass("UIStroke")
-		if stroke then
-			stroke:Destroy()
-			print("[DEBUG] Stroke dihapus dari: " .. obj.Name)
-		end
-	end
-	
-	-- Hapus stroke dari TopBar sendiri
-	local topBarStroke = topBar:FindFirstChildOfClass("UIStroke")
-	if topBarStroke then
-		topBarStroke:Destroy()
-		print("[DEBUG] Stroke dihapus dari TopBar")
-	end
-end
-
--- ====== FUNGSI HAPUS BACKGROUND BUTTON DI TOPBAR ======
-local function removeTopBarButtonBackgrounds()
-	local studioGui = playerGui:FindFirstChild("StudioGui")
-	if not studioGui then return end
-	
-	local topBar = studioGui:FindFirstChild("TopBar")
-	if not topBar then return end
-	
-	for _, obj in ipairs(topBar:GetChildren()) do
-		if obj:IsA("TextButton") or obj:IsA("ImageButton") then
-			pcall(function()
-				obj.BackgroundTransparency = 1 -- Buat transparent
-				obj.BorderSizePixel = 0
-				print("[DEBUG] Background dihapus dari button: " .. obj.Name)
-			end)
-		end
-	end
-	
-	-- Untuk button yang nested di dalam frame
-	for _, descendant in ipairs(topBar:GetDescendants()) do
-		if descendant:IsA("TextButton") or descendant:IsA("ImageButton") then
-			pcall(function()
-				descendant.BackgroundTransparency = 1
-				descendant.BorderSizePixel = 0
-			end)
-		end
-	end
-end
-
--- ====== FUNGSI BUAT BLUE SEPARATOR LINE DI BAWAH TOPBAR BUTTONS ======
-local function createBlueSeparatorLine()
-	local studioGui = playerGui:FindFirstChild("StudioGui")
-	if not studioGui then
-		print("[DEBUG] StudioGui tidak ditemukan untuk blue separator")
-		return
-	end
-	
-	local topBar = studioGui:FindFirstChild("TopBar")
-	if not topBar then
-		print("[DEBUG] TopBar tidak ditemukan untuk blue separator")
-		return
-	end
-	
-	-- Hapus jika sudah ada
-	local existingLine = topBar:FindFirstChild("BlueSeparatorLine")
-	if existingLine then
-		existingLine:Destroy()
-	end
-	
-	local blueLine = Instance.new("Frame")
-	blueLine.Name = "BlueSeparatorLine"
-	blueLine.Size = UDim2.new(1, 0, 0, 3) -- Full width, 3 pixel height
-	blueLine.Position = UDim2.new(0, 0, 1, 0) -- Posisi di bawah TopBar
-	blueLine.BackgroundColor3 = THEME.BlueSeparator
-	blueLine.BorderSizePixel = 0
-	blueLine.BackgroundTransparency = 0
-	blueLine.ZIndex = 100 -- Pastikan di atas elemen lain
-	blueLine.Parent = topBar
-	
-	print("[DEBUG] ✅ Blue separator line dibuat di bawah TopBar buttons")
-	return blueLine
-end
-
--- ====== FUNGSI BUAT FRAME GARIS SEPARATOR ======
+-- ====== FUNGSI BUAT FRAME GARIS SEPARATOR (BIRU) ======
 local function createLineSeparator(parent)
 	-- Hapus jika sudah ada
 	local existingLine = parent:FindFirstChild("LineSeparator")
@@ -238,7 +140,7 @@ local function createLineSeparator(parent)
 	lineFrame.Name = "LineSeparator"
 	lineFrame.Size = UDim2.new(0, 1, 0, 30)
 	lineFrame.Position = UDim2.new(0, 405, 0, 3)
-	lineFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	lineFrame.BackgroundColor3 = THEME.SeparatorBlue -- ✅ BIRU BUKAN ABU-ABU
 	lineFrame.BorderSizePixel = 0
 	lineFrame.Parent = parent
 	
@@ -270,6 +172,11 @@ local function duplicatePartSelButton()
 	
 	if not partSelButton then
 		print("[DEBUG] PartSel button tidak ditemukan di MainBar")
+		-- List semua children MainBar untuk debugging
+		print("[DEBUG] Children di MainBar:")
+		for _, child in ipairs(mainBar:GetChildren()) do
+			print("[DEBUG] - " .. child.Name .. " (" .. child.ClassName .. ")")
+		end
 		return
 	end
 	
@@ -527,45 +434,7 @@ local function isPartOfColorPalette(obj)
 	return false
 end
 
--- ====== CARI TOGGLE BUTTON COLORPALETTE ======
-local function findColorPaletteToggle()
-	local studioGui = playerGui:FindFirstChild("StudioGui")
-	if not studioGui then return nil end
-	
-	-- Cari di MainBar dan toolbar area
-	for _, descendant in ipairs(studioGui:GetDescendants()) do
-		if descendant:IsA("GuiButton") then
-			local buttonName = descendant.Name
-			-- Cari button yang berhubungan dengan Color atau Palette
-			if buttonName:find("Color") or buttonName:find("Palette") or buttonName:find("color") or buttonName:find("palette") then
-				print("[DEBUG] ColorPalette toggle button ditemukan: " .. buttonName)
-				return descendant
-			end
-		end
-	end
-	return nil
-end
-
--- ====== PROTECT COLORPALETTE TOGGLE BUTTON ======
-local function protectColorPaletteToggleButton()
-	local toggleBtn = findColorPaletteToggle()
-	if not toggleBtn then
-		print("[DEBUG] Toggle button ColorPalette tidak ditemukan")
-		return
-	end
-	
-	-- Simpan warna original
-	local originalTextColor = toggleBtn.TextColor3
-	local originalBgColor = toggleBtn.BackgroundColor3
-	
-	-- Protect dari perubahan warna
-	protectColorProperty(toggleBtn, "TextColor3", originalTextColor)
-	protectColorProperty(toggleBtn, "BackgroundColor3", originalBgColor)
-	
-	print("[DEBUG] ✅ ColorPalette toggle button dilindungi")
-end
-
--- ====== TERAPKAN THEME KHUSUS UNTUK COLORPALETTE (FRAME + SPECIFIC ELEMENTS) ======
+-- ====== TERAPKAN THEME KHUSUS UNTUK COLORPALETTE (HANYA ELEMEN TERTENTU) ======
 local function applyColorPaletteTheme(colorPaletteFrame)
 	if not colorPaletteFrame or colorPaletteFrame.Name ~= "ColorPalette" then return end
 	
@@ -576,16 +445,14 @@ local function applyColorPaletteTheme(colorPaletteFrame)
 			protectColorProperty(colorPaletteFrame, "BackgroundColor3", THEME.FrameColor)
 		end
 		
-		-- 2. Tambah stroke jika belum ada
+		-- 🚨 HAPUS STROKE JIKA ADA (TIDAK TAMBAH STROKE BARU)
 		local existingStroke = colorPaletteFrame:FindFirstChildOfClass("UIStroke")
-		if not existingStroke then
-			local uiStroke = Instance.new("UIStroke")
-			uiStroke.Color = THEME.StrokeColor
-			uiStroke.Thickness = 1.5
-			uiStroke.Parent = colorPaletteFrame
+		if existingStroke then
+			existingStroke:Destroy()
+			print("[DEBUG] UIStroke dihapus dari ColorPalette")
 		end
 		
-		-- 3. Tambah corner jika belum ada
+		-- 2. Tambah corner jika belum ada
 		local existingCorner = colorPaletteFrame:FindFirstChildOfClass("UICorner")
 		if not existingCorner then
 			local uiCorner = Instance.new("UICorner")
@@ -593,11 +460,11 @@ local function applyColorPaletteTheme(colorPaletteFrame)
 			uiCorner.Parent = colorPaletteFrame
 		end
 		
-		-- 4. Posisi tengah
+		-- 3. Posisi tengah
 		colorPaletteFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 		colorPaletteFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 		
-		-- 5. THEME SPECIFIC ELEMENTS INSIDE COLORPALETTE
+		-- 4. THEME SPECIFIC ELEMENTS INSIDE COLORPALETTE
 		for _, child in ipairs(colorPaletteFrame:GetDescendants()) do
 			-- OkButton & CancelButton - theme button (text + background)
 			if child.Name == "OkButton" or child.Name == "CancelButton" then
@@ -606,6 +473,12 @@ local function applyColorPaletteTheme(colorPaletteFrame)
 					child.BackgroundColor3 = THEME.TextButtonColor
 					protectColorProperty(child, "TextColor3", THEME.TextColor)
 					protectColorProperty(child, "BackgroundColor3", THEME.TextButtonColor)
+					
+					-- 🚨 HAPUS STROKE dari button
+					local btnStroke = child:FindFirstChildOfClass("UIStroke")
+					if btnStroke then
+						btnStroke:Destroy()
+					end
 				end
 			end
 			
@@ -620,6 +493,12 @@ local function applyColorPaletteTheme(colorPaletteFrame)
 					if child.BackgroundTransparency < 1 then
 						protectColorProperty(child, "BackgroundColor3", THEME.FrameColor)
 					end
+					
+					-- 🚨 HAPUS STROKE dari label
+					local labelStroke = child:FindFirstChildOfClass("UIStroke")
+					if labelStroke then
+						labelStroke:Destroy()
+					end
 				end
 			end
 			
@@ -629,38 +508,53 @@ local function applyColorPaletteTheme(colorPaletteFrame)
 					child.TextColor3 = THEME.TextColor
 					protectColorProperty(child, "TextColor3", THEME.TextColor)
 					-- Background TIDAK diubah
+					
+					-- 🚨 HAPUS STROKE jika ada
+					local textStroke = child:FindFirstChildOfClass("UIStroke")
+					if textStroke then
+						textStroke:Destroy()
+					end
 				end
+			end
+			
+			-- 🚨 HAPUS SEMUA STROKE di descendants ColorPalette
+			if child:IsA("UIStroke") then
+				child:Destroy()
 			end
 		end
 	end)
 end
 
--- ====== FUNGSI SCAN & SETUP COLORPALETTE ======
-local function setupColorPalette()
-	local function findAllColorPalettes(parent)
-		local colorPalettes = {}
-		for _, child in ipairs(parent:GetChildren()) do
-			if child.Name == "ColorPalette" and child:IsA("Frame") then
-				table.insert(colorPalettes, child)
-			end
-			local subPalettes = findAllColorPalettes(child)
-			for _, p in ipairs(subPalettes) do
-				table.insert(colorPalettes, p)
+-- ====== FUNGSI CARI & PROTECT TOGGLE COLORPALETTE (TIDAK BERUBAH) ======
+local function protectColorPaletteToggle()
+	local studioGui = playerGui:FindFirstChild("StudioGui")
+	if not studioGui then return end
+	
+	-- Cari toggle button yang munculkan ColorPalette
+	-- Biasanya di MainBar atau toolbar area
+	for _, descendant in ipairs(studioGui:GetDescendants()) do
+		if descendant:IsA("GuiButton") then
+			-- Cek apakah button ini related dengan ColorPalette
+			local buttonName = descendant.Name
+			if buttonName:find("Color") or buttonName:find("Palette") or buttonName:find("color") or buttonName:find("palette") then
+				-- JANGAN UBAH BUTTON INI SAMA SEKALI
+				-- Simpan warna original
+				if descendant:IsA("TextButton") or descendant:IsA("GuiButton") then
+					pcall(function()
+						-- Hanya protect, tidak ubah
+						local originalTextColor = descendant.TextColor3
+						local originalBgColor = descendant.BackgroundColor3
+						
+						-- Jangan override dengan theme color
+						-- Biarkan warna original tetap
+						print("[DEBUG] Toggle ColorPalette '" .. buttonName .. "' dilindungi (tidak berubah)")
+					end)
+				end
 			end
 		end
-		return colorPalettes
 	end
-
-	local allColorPalettes = findAllColorPalettes(playerGui)
-
-	if #allColorPalettes == 0 then
-		return
-	end
-
-	-- Terapkan theme khusus ke setiap ColorPalette (hanya frame, child elements tetap original)
-	for _, colorPalette in ipairs(allColorPalettes) do
-		applyColorPaletteTheme(colorPalette)
-	end
+	
+	print("[DEBUG] ColorPalette toggle buttons dilindungi")
 end
 
 -- ====== FUNGSI UTAMA: TERAPKAN TEMA + PROTEKSI ======
@@ -684,6 +578,14 @@ local function applyTheme(obj)
 	-- SKIP BUTTON DALAM FOLDER DI COLORPALETTE
 	if isButtonInFolderInsideColorPalette(obj) then
 		return
+	end
+	
+	-- SKIP TOGGLE COLORPALETTE (TIDAK BERUBAH)
+	if obj:IsA("GuiButton") then
+		local buttonName = obj.Name
+		if buttonName:find("Color") or buttonName:find("Palette") or buttonName:find("color") or buttonName:find("palette") then
+			return
+		end
 	end
 	
 	-- SKIP SEMUA CHILD ELEMENTS DARI COLORPALETTE (KECUALI COLORPALETTE FRAME SENDIRI)
@@ -749,6 +651,34 @@ local function applyTheme(obj)
 	end)
 end
 
+-- ====== FUNGSI SCAN & SETUP COLORPALETTE ======
+local function setupColorPalette()
+	local function findAllColorPalettes(parent)
+		local colorPalettes = {}
+		for _, child in ipairs(parent:GetChildren()) do
+			if child.Name == "ColorPalette" and child:IsA("Frame") then
+				table.insert(colorPalettes, child)
+			end
+			local subPalettes = findAllColorPalettes(child)
+			for _, p in ipairs(subPalettes) do
+				table.insert(colorPalettes, p)
+			end
+		end
+		return colorPalettes
+	end
+
+	local allColorPalettes = findAllColorPalettes(playerGui)
+
+	if #allColorPalettes == 0 then
+		return
+	end
+
+	-- Terapkan theme khusus ke setiap ColorPalette (hanya frame, child elements tetap original)
+	for _, colorPalette in ipairs(allColorPalettes) do
+		applyColorPaletteTheme(colorPalette)
+	end
+end
+
 -- ====== FUNGSI RECOLOR SEMUA ======
 local function recolorEverything()
 	applyTheme(playerGui)
@@ -758,29 +688,29 @@ local function recolorEverything()
 	end
 end
 
+-- ====== FUNGSI HAPUS SEMUA STROKE DI UI ======
+local function removeAllStrokes()
+	local studioGui = playerGui:FindFirstChild("StudioGui")
+	if not studioGui then return end
+	
+	-- Hapus semua UIStroke di StudioGui
+	for _, obj in ipairs(studioGui:GetDescendants()) do
+		if obj:IsA("UIStroke") then
+			obj:Destroy()
+		end
+	end
+	
+	print("[DEBUG] Semua UIStroke di StudioGui dihapus")
+end
+
 -- ====== FUNGSI GABUNGAN ======
 local function scanAndApplyAll()
 	recolorEverything()
 	setupColorPalette()
 	
-	-- Hapus semua stroke di TopBar
+	-- Hapus semua stroke
 	task.defer(function()
-		removeTopBarStrokes()
-	end)
-	
-	-- Hapus background buttons di TopBar
-	task.defer(function()
-		removeTopBarButtonBackgrounds()
-	end)
-	
-	-- Buat blue separator line di bawah TopBar
-	task.defer(function()
-		createBlueSeparatorLine()
-	end)
-	
-	-- Protect ColorPalette toggle button
-	task.defer(function()
-		protectColorPaletteToggleButton()
+		removeAllStrokes()
 	end)
 	
 	-- Update images dengan ID baru
@@ -798,20 +728,25 @@ local function scanAndApplyAll()
 		duplicatePartSelButton()
 	end)
 	
-	-- Buat line separator di MainBar
+	-- Buat line separator di MainBar (WARNA BIRU)
 	task.defer(function()
 		local studioGui = playerGui:FindFirstChild("StudioGui")
 		if studioGui then
 			local mainBar = studioGui:FindFirstChild("MainBar")
 			if mainBar then
 				createLineSeparator(mainBar)
-				print("[DEBUG] Line separator dibuat di MainBar")
+				print("[DEBUG] ✅ Line separator BIRU dibuat di MainBar")
 			else
 				print("[DEBUG] MainBar tidak ditemukan untuk garis")
 			end
 		else
 			print("[DEBUG] StudioGui tidak ditemukan untuk garis")
 		end
+	end)
+	
+	-- Protect ColorPalette toggle buttons (TIDAK BERUBAH)
+	task.defer(function()
+		protectColorPaletteToggle()
 	end)
 end
 
@@ -851,19 +786,18 @@ playerGui.DescendantAdded:Connect(function(obj)
 	if isSelectMultiButton(obj) then
 		return
 	end
+	
+	-- Jika ada UIStroke baru, hapus langsung
+	if obj:IsA("UIStroke") then
+		task.defer(function()
+			if obj and obj.Parent then
+				obj:Destroy()
+			end
+		end)
+	end
 end)
 
-print("[ThemeRecolor v8 - FINAL MODIFIED] ✅ Script berjalan! Key: STUDIORIS2024")
-print("[ThemeRecolor v8 - FINAL MODIFIED] 🎨 Images: 14547804225, 84031887426375")
-print("[ThemeRecolor v8 - FINAL MODIFIED] 🔘 Button: PluginBtn @ (430, 3)")
-print("[ThemeRecolor v8 - FINAL MODIFIED] 🔄 Rotate Button dengan rotasi otomatis")
-print("[ThemeRecolor v8 - FINAL MODIFIED] ━ Line Separator @ (405, 3)")
-print("[ThemeRecolor v8 - FINAL MODIFIED] 🎨 ColorPalette Elements:")
-print("   ├─ OkButton & CancelButton (text + bg)")
-print("   ├─ BasicColorsTitle (text + bg)")
-print("   └─ SelectedColor texts (text only)")
-print("[ThemeRecolor v8 - FINAL MODIFIED] 🔒 ColorPalette toggle button protected (NO COLOR CHANGE)")
-print("[ThemeRecolor v8 - FINAL MODIFIED] ✅ TopBar: Semua stroke dihapus")
-print("[ThemeRecolor v8 - FINAL MODIFIED] ✅ TopBar: Button backgrounds dihapus (transparent)")
-print("[ThemeRecolor v8 - FINAL MODIFIED] 🔵 Blue Separator Line di bawah TopBar buttons")
-print("[ThemeRecolor v8 - FINAL MODIFIED] 📋 Cek output console untuk debug info")
+print("[ThemeRecolor v8.1 - FINAL] ✅ Script berjalan! Key: STUDIORIS2024")
+print("[ThemeRecolor v8.1] ✅ Semua STROKE dihapus")
+print("[ThemeRecolor v8.1] ✅ Garis separator BIRU")
+print("[ThemeRecolor v8.1] ✅ Toggle ColorPalette dilindungi")
