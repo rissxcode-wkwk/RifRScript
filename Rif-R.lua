@@ -2,7 +2,7 @@
 ╔════════════════════════════════════════════════════════════════╗
 ║           ThemeRecolor.lua v8 - MODIFIED & ENHANCED            ║
 ║                      Made By Redz                              ║
-║                    Modified Version                            ║
+║                    Modified Version (FIXED)                    ║
 ╚════════════════════════════════════════════════════════════════╝
 
 FITUR UTAMA:
@@ -19,6 +19,7 @@ FITUR UTAMA:
 ✅ Custom Image IDs dengan rotasi
 ✅ Duplikasi PartSel Button ke PluginBtn
 ✅ Frame garis separator
+✅ **FIXED: HANYA AFFECT STUDIOGUI, TIDAK MENGGANGGU SCREENgui LAIN**
 
 CARA PAKAI:
 Taruh sebagai LocalScript di StarterPlayer > StarterPlayerScripts
@@ -30,6 +31,9 @@ KEY: STUDIORIS2024
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
+
+-- ====== TUNGGU STUDIOGUI EXIST ======
+local studioGui = playerGui:WaitForChild("StudioGui")
 
 -- ====== KONFIGURASI WARNA TEMA ======
 local THEME = {
@@ -56,6 +60,20 @@ local CUSTOM_CONFIG = {
 local protectedObjects = {}
 local protectedConnections = {}
 
+-- ====== FUNGSI CEK APAKAH OBJECT DALAM STUDIOGUI ======
+local function isInStudioGui(obj)
+	if not obj then return false end
+	
+	local current = obj
+	while current and current ~= playerGui do
+		if current == studioGui then
+			return true
+		end
+		current = current.Parent
+	end
+	return false
+end
+
 -- ====== FUNGSI CEK WARNA MERAH ======
 local function isRedColor(color)
 	if not color then return false end
@@ -75,7 +93,7 @@ local function isButtonInFolderInsideColorPalette(obj)
 	local parent = obj.Parent
 	if parent and parent:IsA("Folder") then
 		local grandparent = parent.Parent
-		while grandparent and grandparent ~= playerGui do
+		while grandparent and grandparent ~= studioGui do
 			if grandparent:IsA("Frame") and grandparent.Name == "ColorPalette" then
 				return true
 			end
@@ -140,12 +158,6 @@ end
 
 -- ====== FUNGSI DUPLIKASI BUTTON (PartSel → PluginBtn) ======
 local function duplicatePartSelButton()
-	local studioGui = playerGui:FindFirstChild("StudioGui")
-	if not studioGui then
-		print("[DEBUG] StudioGui tidak ditemukan")
-		return
-	end
-	
 	local mainBar = studioGui:FindFirstChild("MainBar")
 	if not mainBar then
 		print("[DEBUG] MainBar tidak ditemukan")
@@ -223,10 +235,7 @@ end
 
 -- ====== FUNGSI UPDATE IMAGE DENGAN ROTASI ======
 local function updateSelectImages()
-	local studioGui = playerGui:FindFirstChild("StudioGui")
-	if not studioGui then return end
-	
-	-- Cari semua ImageLabel dengan nama tertentu
+	-- Cari semua ImageLabel dengan nama tertentu HANYA DI STUDIOGUI
 	for _, obj in ipairs(studioGui:GetDescendants()) do
 		if obj:IsA("ImageLabel") then
 			-- Update image dengan ID baru
@@ -247,9 +256,6 @@ end
 
 -- ====== FUNGSI SETUP BUTTON ROTATE ======
 local function setupRotateButton()
-	local studioGui = playerGui:FindFirstChild("StudioGui")
-	if not studioGui then return end
-	
 	local mainBar = studioGui:FindFirstChild("MainBar")
 	if not mainBar then return end
 	
@@ -416,7 +422,7 @@ local function isPartOfColorPalette(obj)
 	if obj.Name == "ColorPalette" then return true end
 	
 	local parent = obj.Parent
-	while parent and parent ~= playerGui do
+	while parent and parent ~= studioGui do
 		if parent.Name == "ColorPalette" then
 			return true
 		end
@@ -498,9 +504,6 @@ end
 
 -- ====== FUNGSI CARI & PROTECT TOGGLE COLORPALETTE ======
 local function protectColorPaletteToggle()
-	local studioGui = playerGui:FindFirstChild("StudioGui")
-	if not studioGui then return end
-	
 	-- Cari toggle button yang munculkan ColorPalette
 	-- Biasanya di MainBar atau toolbar area
 	for _, descendant in ipairs(studioGui:GetDescendants()) do
@@ -524,9 +527,14 @@ local function protectColorPaletteToggle()
 	print("[DEBUG] ColorPalette toggle buttons protected")
 end
 
--- ====== FUNGSI UTAMA: TERAPKAN TEMA + PROTEKSI ======
+-- ====== FUNGSI UTAMA: TERAPKAN TEMA + PROTEKSI (HANYA STUDIOGUI) ======
 local function applyTheme(obj)
 	if not obj or not obj.Parent then return end
+
+	-- **CRITICAL FIX: CEK APAKAH OBJECT DALAM STUDIOGUI**
+	if not isInStudioGui(obj) then
+		return
+	end
 
 	-- SKIP StudioRisBoxKey
 	local parentCheck = obj
@@ -626,7 +634,7 @@ local function setupColorPalette()
 		return colorPalettes
 	end
 
-	local allColorPalettes = findAllColorPalettes(playerGui)
+	local allColorPalettes = findAllColorPalettes(studioGui)
 
 	if #allColorPalettes == 0 then
 		return
@@ -638,11 +646,11 @@ local function setupColorPalette()
 	end
 end
 
--- ====== FUNGSI RECOLOR SEMUA ======
+-- ====== FUNGSI RECOLOR SEMUA (HANYA STUDIOGUI) ======
 local function recolorEverything()
-	applyTheme(playerGui)
+	applyTheme(studioGui)
 
-	for _, obj in ipairs(playerGui:GetDescendants()) do
+	for _, obj in ipairs(studioGui:GetDescendants()) do
 		applyTheme(obj)
 	end
 end
@@ -669,17 +677,12 @@ local function scanAndApplyAll()
 	
 	-- Buat line separator di MainBar
 	task.defer(function()
-		local studioGui = playerGui:FindFirstChild("StudioGui")
-		if studioGui then
-			local mainBar = studioGui:FindFirstChild("MainBar")
-			if mainBar then
-				createLineSeparator(mainBar)
-				print("[DEBUG] Line separator dibuat di MainBar")
-			else
-				print("[DEBUG] MainBar tidak ditemukan untuk garis")
-			end
+		local mainBar = studioGui:FindFirstChild("MainBar")
+		if mainBar then
+			createLineSeparator(mainBar)
+			print("[DEBUG] Line separator dibuat di MainBar")
 		else
-			print("[DEBUG] StudioGui tidak ditemukan untuk garis")
+			print("[DEBUG] MainBar tidak ditemukan untuk garis")
 		end
 	end)
 	
@@ -705,8 +708,13 @@ task.spawn(function()
 	end
 end)
 
--- Auto-apply ke elemen baru + COLOR PROTECTION
-playerGui.DescendantAdded:Connect(function(obj)
+-- **CRITICAL FIX: Auto-apply ke elemen baru HANYA DI STUDIOGUI**
+studioGui.DescendantAdded:Connect(function(obj)
+	-- Pastikan object adalah child dari StudioGui
+	if not isInStudioGui(obj) then
+		return
+	end
+	
 	applyTheme(obj)
 
 	-- Jika ColorPalette baru dibuat
@@ -726,11 +734,8 @@ playerGui.DescendantAdded:Connect(function(obj)
 		return
 	end
 end)
+
 -- ====== HAPUS BORDER & UISTROKE ======
-
-local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-local studioGui = playerGui:WaitForChild("StudioGui")
-
 local mainBar = studioGui:FindFirstChild("MainBar", true)
 
 if mainBar then
@@ -799,13 +804,15 @@ if mainBar then
 	print("✅ Border & UIStroke dibersihkan")
 end
 
-print("[ThemeRecolor v8 - FINAL] 🎨 Images: 14547804225, 84031887426375")
-print("[ThemeRecolor v8 - FINAL] 🔘 Button: PluginBtn @ (430, 3)")
-print("[ThemeRecolor v8 - FINAL] 🔄 Rotate Button dengan rotasi otomatis")
-print("[ThemeRecolor v8 - FINAL] ━ Line Separator @ (405, 3)")
-print("[ThemeRecolor v8 - FINAL] 🎨 ColorPalette Elements:")
+print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
+print("[ThemeRecolor v8 - FINAL FIXED] 🔒 Tidak mengganggu ScreenGui lain")
+print("[ThemeRecolor v8 - FINAL FIXED] 🎨 Images: 14547804225, 84031887426375")
+print("[ThemeRecolor v8 - FINAL FIXED] 🔘 Button: PluginBtn @ (430, 3)")
+print("[ThemeRecolor v8 - FINAL FIXED] 🔄 Rotate Button dengan rotasi otomatis")
+print("[ThemeRecolor v8 - FINAL FIXED] ━ Line Separator @ (405, 3)")
+print("[ThemeRecolor v8 - FINAL FIXED] 🎨 ColorPalette Elements:")
 print("   ├─ OkButton & CancelButton (text + bg)")
 print("   ├─ BasicColorsTitle (text + bg)")
 print("   └─ SelectedColor texts (text only)")
-print("[ThemeRecolor v8 - FINAL] 🔒 ColorPalette toggle button protected")
-print("[ThemeRecolor v8 - FINAL] 📋 Cek output console untuk debug info")
+print("[ThemeRecolor v8 - FINAL FIXED] 🔒 ColorPalette toggle button protected")
+print("[ThemeRecolor v8 - FINAL FIXED] 📋 Cek output console untuk debug info")
