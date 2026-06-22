@@ -726,49 +726,79 @@ playerGui.DescendantAdded:Connect(function(obj)
 		return
 	end
 end)
--- ====== HAPUS BORDER & UISTROKE DI MAINBAR + TOPBAR ======
+-- ====== HAPUS BORDER & UISTROKE ======
 
 local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 local studioGui = playerGui:WaitForChild("StudioGui")
 
-local function cleanGui(container)
-	if not container then
-		return
-	end
+local mainBar = studioGui:FindFirstChild("MainBar", true)
 
-	if container:IsA("Frame")
-		or container:IsA("TextButton")
-		or container:IsA("TextLabel")
-		or container:IsA("ImageButton")
-		or container:IsA("ImageLabel")
-		or container:IsA("ScrollingFrame")
+if mainBar then
+
+	-- MainBar sendiri
+	if mainBar:IsA("Frame")
+		or mainBar:IsA("TextButton")
+		or mainBar:IsA("TextLabel")
+		or mainBar:IsA("ImageButton")
+		or mainBar:IsA("ImageLabel")
+		or mainBar:IsA("ScrollingFrame")
 	then
-		container.BorderSizePixel = 0
+		mainBar.BorderSizePixel = 0
 	end
 
-	for _, obj in ipairs(container:GetDescendants()) do
-		if obj:IsA("UIStroke") then
-			obj:Destroy()
+	-- Semua isi MainBar kecuali Topbar dan keturunannya
+	for _, obj in ipairs(mainBar:GetDescendants()) do
 
-		elseif obj:IsA("Frame")
-			or obj:IsA("TextButton")
-			or obj:IsA("TextLabel")
-			or obj:IsA("ImageButton")
-			or obj:IsA("ImageLabel")
-			or obj:IsA("ScrollingFrame")
-		then
-			obj.BorderSizePixel = 0
+		local insideTopbar = false
+		local topbar = mainBar:FindFirstChild("Topbar", true)
+
+		if topbar and (obj == topbar or topbar:IsAncestorOf(obj)) then
+			insideTopbar = true
+		end
+
+		if not insideTopbar then
+
+			if obj:IsA("UIStroke") then
+				obj:Destroy()
+
+			elseif obj:IsA("Frame")
+				or obj:IsA("TextButton")
+				or obj:IsA("TextLabel")
+				or obj:IsA("ImageButton")
+				or obj:IsA("ImageLabel")
+				or obj:IsA("ScrollingFrame")
+			then
+				obj.BorderSizePixel = 0
+			end
+
 		end
 	end
+
+	-- Hanya isi Topbar yang dibersihkan
+	local topbar = mainBar:FindFirstChild("Topbar", true)
+
+	if topbar then
+		for _, obj in ipairs(topbar:GetDescendants()) do
+
+			if obj:IsA("UIStroke") then
+				obj:Destroy()
+
+			elseif obj:IsA("Frame")
+				or obj:IsA("TextButton")
+				or obj:IsA("TextLabel")
+				or obj:IsA("ImageButton")
+				or obj:IsA("ImageLabel")
+				or obj:IsA("ScrollingFrame")
+			then
+				obj.BorderSizePixel = 0
+			end
+
+		end
+	end
+
+	print("✅ Border & UIStroke dibersihkan")
 end
 
-local mainBar = studioGui:FindFirstChild("MainBar", true)
-cleanGui(mainBar)
-
-local topbar = mainBar and mainBar:FindFirstChild("Topbar", true)
-cleanGui(topbar)
-
-print("✅ MainBar & Topbar dibersihkan dari border dan UIStroke")
 print("[ThemeRecolor v8 - FINAL] 🎨 Images: 14547804225, 84031887426375")
 print("[ThemeRecolor v8 - FINAL] 🔘 Button: PluginBtn @ (430, 3)")
 print("[ThemeRecolor v8 - FINAL] 🔄 Rotate Button dengan rotasi otomatis")
