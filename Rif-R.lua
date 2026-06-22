@@ -804,6 +804,296 @@ if mainBar then
 	print("✅ Border & UIStroke dibersihkan")
 end
 
+
+-- ====== TUNGGU THEME APPLY SELESAI ======
+task.wait(2)
+
+-- ====== KONFIGURASI TEMA (SAMA DENGAN THEMERECOLOR) ======
+local THEME = {
+	TextColor        = Color3.fromRGB(255, 255, 255),
+	TextButtonColor  = Color3.fromRGB(60, 60, 60),
+	TextButtonHover  = Color3.fromRGB(75, 75, 75),
+	FrameColor       = Color3.fromRGB(46, 46, 46),
+}
+
+-- ====== Button Recharge 
+-- ====== TABEL UNTUK MENYIMPAN OLD BUTTON EVENTS ======
+local oldButtonEvents = {}
+
+-- ====== FUNGSI CARI FRAME BERDASARKAN NAMA ======
+local function findFrameByName(frameName)
+	print("[TopBar Manager] Mencari frame: " .. frameName)
+	
+	for _, obj in ipairs(studioGui:GetDescendants()) do
+		if obj.Name == frameName and obj:IsA("Frame") then
+			print("[TopBar Manager] ✓ Frame ditemukan: " .. frameName)
+			return obj
+		end
+	end
+	
+	print("[TopBar Manager] ✗ Frame TIDAK ditemukan: " .. frameName)
+	return nil
+end
+
+-- ====== FUNGSI CARI BUTTON YANG MEMBUKA FRAME ======
+local function findButtonThatOpensFrame(frameName)
+	print("[TopBar Manager] Mencari button yang membuka frame: " .. frameName)
+	
+	local targetFrame = findFrameByName(frameName)
+	if not targetFrame then
+		return nil
+	end
+	
+	-- Cari button di seluruh UI yang mungkin membuka frame ini
+	for _, obj in ipairs(studioGui:GetDescendants()) do
+		if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+			-- Kumpulkan info button
+			local buttonInfo = {
+				obj = obj,
+				name = obj.Name,
+				parent = obj.Parent and obj.Parent.Name or "Unknown",
+			}
+			
+			-- Check apakah button ini likely membuka frame
+			if buttonInfo.name:lower():find("open") or 
+			   buttonInfo.name:lower():find("save") or
+			   buttonInfo.name:lower():find("new") or
+			   buttonInfo.name:lower():find("dialog") then
+				print("[TopBar Manager] ✓ Found potential button: " .. buttonInfo.name .. " di " .. buttonInfo.parent)
+				return obj
+			end
+		end
+	end
+	
+	return nil
+end
+
+-- ====== FUNGSI HAPUS SEMUA BUTTON LAMA DI TOPBAR ======
+local function deleteAllButtonsInTopBar()
+	print("[TopBar Manager] Menghapus semua button lama di TopBar...")
+	
+	local topBar = studioGui:FindFirstChild("TopBar", true)
+	if not topBar then
+		print("[TopBar Manager] ✗ TopBar tidak ditemukan")
+		return false
+	end
+	
+	local deletedCount = 0
+	local childrenToDelete = {}
+	
+	-- Collect semua button untuk dihapus
+	for _, obj in ipairs(topBar:GetChildren()) do
+		if obj:IsA("TextButton") or obj:IsA("ImageButton") or obj:IsA("GuiButton") then
+			-- Sebelum hapus, simpan event-nya
+			if obj.MouseButton1Click then
+				pcall(function()
+					oldButtonEvents[obj.Name] = obj.MouseButton1Click
+				end)
+			end
+			
+			table.insert(childrenToDelete, obj)
+		end
+	end
+	
+	-- Delete semua button
+	for _, button in ipairs(childrenToDelete) do
+		print("[TopBar Manager] Menghapus button: " .. button.Name)
+		button:Destroy()
+		deletedCount = deletedCount + 1
+	end
+	
+	print("[TopBar Manager] ✓ " .. deletedCount .. " button dihapus")
+	return true
+end
+
+-- ====== FUNGSI BUAT BUTTON BARU ======
+local function createNewButton(topBar, buttonName, position, frameToShow)
+	print("[TopBar Manager] Membuat button: " .. buttonName)
+	
+	local newButton = Instance.new("TextButton")
+	newButton.Name = buttonName
+	newButton.Size = UDim2.new(0, 57, 1, 0)
+	newButton.Position = position
+	newButton.BackgroundTransparency = 1
+	newButton.BorderSizePixel = 0
+	newButton.TextColor3 = THEME.TextColor
+	newButton.TextSize = 14
+	newButton.Font = Enum.Font.GothamMedium
+	newButton.Text = buttonName
+	newButton.Parent = topBar
+	
+	-- Setup hover effect
+	newButton.MouseEnter:Connect(function()
+		newButton.BackgroundTransparency = 0.7
+		newButton.BackgroundColor3 = THEME.TextButtonHover
+	end)
+	
+	newButton.MouseLeave:Connect(function()
+		newButton.BackgroundTransparency = 1
+	end)
+	
+	-- Setup click event untuk membuka frame
+	newButton.MouseButton1Click:Connect(function()
+		if frameToShow and frameToShow.Parent then
+			-- Tampilkan frame
+			frameToShow.Visible = true
+			
+			-- Set display order ke depan
+			pcall(function()
+				local screenGui = frameToShow
+				while screenGui and screenGui.Parent and not screenGui:IsA("ScreenGui") do
+					screenGui = screenGui.Parent
+				end
+				if screenGui and screenGui:IsA("ScreenGui") then
+					screenGui.DisplayOrder = 100
+				end
+			end)
+			
+			print("[TopBar Manager] ✓ Frame '" .. frameToShow.Name .. "' ditampilkan")
+		else
+			print("[TopBar Manager] ⚠ Frame untuk button '" .. buttonName .. "' tidak tersedia")
+		end
+	end)
+	
+	print("[TopBar Manager] ✓ Button '" .. buttonName .. "' berhasil dibuat di posisi " .. tostring(position))
+	return newButton
+end
+
+-- ====== FUNGSI DEBUG: LIST SEMUA FRAME ======
+local function debugListFrames()
+	print("\n[TopBar Manager - DEBUG] === DAFTAR SEMUA FRAME ===")
+	
+	local frameNames = {}
+	for _, obj in ipairs(studioGui:GetDescendants()) do
+		if obj:IsA("Frame") and obj.Name ~= "" then
+			table.insert(frameNames, obj.Name)
+		end
+	end
+	
+	table.sort(frameNames)
+	local uniqueFrames = {}
+	for _, name in ipairs(frameNames) do
+		if not uniqueFrames[name] then
+			uniqueFrames[name] = true
+			print("  • " .. name)
+		end
+	end
+	
+	print("[TopBar Manager - DEBUG] Total unique frames: " .. table.getn(uniqueFrames))
+end
+
+-- ====== FUNGSI DEBUG: LIST SEMUA BUTTON ======
+local function debugListButtons()
+	print("\n[TopBar Manager - DEBUG] === DAFTAR SEMUA BUTTON ===")
+	
+	local buttons = {}
+	for _, obj in ipairs(studioGui:GetDescendants()) do
+		if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+			table.insert(buttons, {
+				name = obj.Name,
+				parent = obj.Parent.Name,
+			})
+		end
+	end
+	
+	table.sort(buttons, function(a, b) 
+		return (a.parent .. "/" .. a.name) < (b.parent .. "/" .. b.name) 
+	end)
+	
+	for _, btn in ipairs(buttons) do
+		print("  • [" .. btn.parent .. "] " .. btn.name)
+	end
+	
+	print("[TopBar Manager - DEBUG] Total buttons: " .. #buttons)
+end
+
+-- ====== FUNGSI UTAMA: MANAGE TOPBAR ======
+local function manageTopBar()
+	print("\n" .. string.rep("=", 65))
+	print("[TopBar Manager] 🚀 STARTING TOPBAR MANAGEMENT")
+	print(string.rep("=", 65))
+	
+	-- 1. CARI TOPBAR
+	print("\n[TopBar Manager] 🔍 Mencari TopBar...")
+	local topBar = studioGui:FindFirstChild("TopBar", true)
+	if not topBar then
+		print("[TopBar Manager] ✗ FATAL ERROR: TopBar tidak ditemukan!")
+		debugListFrames()
+		return false
+	end
+	print("[TopBar Manager] ✓ TopBar ditemukan")
+	
+	-- 2. CARI FRAME YANG DIBUTUHKAN
+	print("\n[TopBar Manager] 🔍 Mencari frames yang dibutuhkan...")
+	local dialogYesNoFrame = findFrameByName("DialogYesNoFrame")
+	local openSaveFrame = findFrameByName("OpenSaveFrame")
+	
+	if not dialogYesNoFrame then
+		print("[TopBar Manager] ⚠️  DialogYesNoFrame tidak ditemukan")
+		print("[TopBar Manager] ℹ️  Button 'New' akan tetap dibuat tapi tidak akan membuka frame")
+	end
+	if not openSaveFrame then
+		print("[TopBar Manager] ⚠️  OpenSaveFrame tidak ditemukan")
+		print("[TopBar Manager] ℹ️  Button 'Open/Save/Restore' akan tetap dibuat tapi tidak akan membuka frame")
+	end
+	
+	-- 3. HAPUS BUTTON LAMA
+	print("\n[TopBar Manager] 🗑️  Menghapus button lama...")
+	deleteAllButtonsInTopBar()
+	
+	-- 4. BUAT 4 BUTTON BARU
+	print("\n[TopBar Manager] ✨ Membuat 4 button baru...")
+	
+	local buttonConfigs = {
+		{
+			name = "New",
+			position = UDim2.new(0, 0, 0, 0),
+			frame = dialogYesNoFrame,
+		},
+		{
+			name = "Open",
+			position = UDim2.new(0.07, 0, 0, 0),
+			frame = openSaveFrame,
+		},
+		{
+			name = "Save",
+			position = UDim2.new(0.13, 0, 0, 0),
+			frame = openSaveFrame,
+		},
+		{
+			name = "Restore",
+			position = UDim2.new(0.15, 0, 0, 0),
+			frame = openSaveFrame,
+		},
+	}
+	
+	for _, config in ipairs(buttonConfigs) do
+		createNewButton(topBar, config.name, config.position, config.frame)
+	end
+	
+	-- 5. REPORT SELESAI
+	print("\n" .. string.rep("=", 65))
+	print("[TopBar Manager] ✅ TOPBAR MANAGEMENT COMPLETED SUCCESSFULLY")
+	print(string.rep("=", 65))
+	print("\n[TopBar Manager] Summary:")
+	print("  ✓ TopBar ditemukan")
+	print("  ✓ " .. #buttonConfigs .. " button baru dibuat")
+	if dialogYesNoFrame then print("  ✓ DialogYesNoFrame linked") else print("  ⚠ DialogYesNoFrame not linked") end
+	if openSaveFrame then print("  ✓ OpenSaveFrame linked") else print("  ⚠ OpenSaveFrame not linked") end
+	print("\n")
+	
+	return true
+end
+
+-- ====== UNCOMMENT UNTUK DEBUG ======
+-- debugListFrames()
+-- debugListButtons()
+
+-- ====== EKSEKUSI ======
+manageTopBar()
+
+print("[TopBar Manager] 📝 Script execution completed. Check console for details.\n")
+
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
 print("[ThemeRecolor v8 - FINAL FIXED] 🔒 Tidak mengganggu ScreenGui lain")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 Images: 14547804225, 84031887426375")
