@@ -1053,12 +1053,12 @@ local function manageTopBar()
 		{
 			name = "Open",
 			position = UDim2.new(0.07, 0, 0, 0),
-			frame = openSaveFrame,
+			frame = OpenSamplesMenu,
 		},
 		{
 			name = "Save",
 			position = UDim2.new(0.13, 0, 0, 0),
-			frame = openSaveFrame,
+			frame = SaveDetailsFrame,
 		},
 		{
 			name = "Restore",
