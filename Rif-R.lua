@@ -726,33 +726,49 @@ playerGui.DescendantAdded:Connect(function(obj)
 		return
 	end
 end)
--- ====== HAPUS BORDER & UISTROKE DI MAINBAR ======
+-- ====== HAPUS BORDER & UISTROKE DI MAINBAR + TOPBAR ======
 
-local mainBar = studioRisGui:FindFirstChild("MainBar", true)
+local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+local studioGui = playerGui:WaitForChild("StudioGui")
 
-if mainBar then
-
-	-- MainBar sendiri
-	if mainBar:IsA("GuiObject") then
-		mainBar.BorderSizePixel = 0
+local function cleanGui(container)
+	if not container then
+		return
 	end
 
-	for _, obj in ipairs(mainBar:GetDescendants()) do
+	if container:IsA("Frame")
+		or container:IsA("TextButton")
+		or container:IsA("TextLabel")
+		or container:IsA("ImageButton")
+		or container:IsA("ImageLabel")
+		or container:IsA("ScrollingFrame")
+	then
+		container.BorderSizePixel = 0
+	end
 
-		-- Hapus UIStroke
+	for _, obj in ipairs(container:GetDescendants()) do
 		if obj:IsA("UIStroke") then
 			obj:Destroy()
-		end
 
-		-- Hilangkan border GUI
-		if obj:IsA("GuiObject") then
+		elseif obj:IsA("Frame")
+			or obj:IsA("TextButton")
+			or obj:IsA("TextLabel")
+			or obj:IsA("ImageButton")
+			or obj:IsA("ImageLabel")
+			or obj:IsA("ScrollingFrame")
+		then
 			obj.BorderSizePixel = 0
 		end
-
 	end
+end
 
-	print("✅ Border & UIStroke MainBar dihapus")
-end 
+local mainBar = studioGui:FindFirstChild("MainBar", true)
+cleanGui(mainBar)
+
+local topbar = mainBar and mainBar:FindFirstChild("Topbar", true)
+cleanGui(topbar)
+
+print("✅ MainBar & Topbar dibersihkan dari border dan UIStroke")
 print("[ThemeRecolor v8 - FINAL] 🎨 Images: 14547804225, 84031887426375")
 print("[ThemeRecolor v8 - FINAL] 🔘 Button: PluginBtn @ (430, 3)")
 print("[ThemeRecolor v8 - FINAL] 🔄 Rotate Button dengan rotasi otomatis")
