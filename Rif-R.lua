@@ -726,8 +726,33 @@ playerGui.DescendantAdded:Connect(function(obj)
 		return
 	end
 end)
+-- ====== HAPUS BORDER & UISTROKE DI MAINBAR ======
 
-print("[ThemeRecolor v8 - FINAL] ✅ Script berjalan! Key: STUDIORIS2024")
+local mainBar = studioRisGui:FindFirstChild("MainBar", true)
+
+if mainBar then
+
+	-- MainBar sendiri
+	if mainBar:IsA("GuiObject") then
+		mainBar.BorderSizePixel = 0
+	end
+
+	for _, obj in ipairs(mainBar:GetDescendants()) do
+
+		-- Hapus UIStroke
+		if obj:IsA("UIStroke") then
+			obj:Destroy()
+		end
+
+		-- Hilangkan border GUI
+		if obj:IsA("GuiObject") then
+			obj.BorderSizePixel = 0
+		end
+
+	end
+
+	print("✅ Border & UIStroke MainBar dihapus")
+end 
 print("[ThemeRecolor v8 - FINAL] 🎨 Images: 14547804225, 84031887426375")
 print("[ThemeRecolor v8 - FINAL] 🔘 Button: PluginBtn @ (430, 3)")
 print("[ThemeRecolor v8 - FINAL] 🔄 Rotate Button dengan rotasi otomatis")
