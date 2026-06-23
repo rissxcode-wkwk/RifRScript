@@ -816,64 +816,62 @@ local THEME = {
 	FrameColor       = Color3.fromRGB(46, 46, 46),
 }
 
--- ====== AMBIL TOPBAR & FILEMENU ======
+-- ====== AMBIL UI ======
 local topBar = studioGui:WaitForChild("TopBar")
 local fileMenu = topBar:WaitForChild("FileMenu")
 
--- ====== FORCE FILEMENU ======
+-- ====== PASTIKAN POSISI ======
 fileMenu.Parent = topBar
 fileMenu.Visible = true
-fileMenu.Size = UDim2.new(1, 0, 0, 20)
+fileMenu.Size = UDim2.new(0.566, 0, 0, 20)
 fileMenu.Position = UDim2.new(0, 0, 0, 0)
 fileMenu.BorderSizePixel = 0
 
--- ====== HAPUS BUTTON DI TOPBAR SAJA (BUKAN FILEMENU) ======
-for _, obj in ipairs(topBar:GetChildren()) do
-	if obj:IsA("TextButton") or obj:IsA("ImageButton") then
-		-- jangan sentuh kalau dia punya parent FileMenu
-		if obj.Parent ~= fileMenu then
-			obj:Destroy()
-		end
-	end
-end
-
--- ====== LOCK VISIBILITY BIAR GAK HILANG ======
+-- ====== ANTI HIDE SYSTEM ======
 fileMenu:GetPropertyChangedSignal("Visible"):Connect(function()
 	fileMenu.Visible = true
 end)
 
--- backup anti hide
 task.spawn(function()
 	while task.wait(0.5) do
 		fileMenu.Visible = true
 	end
 end)
 
+-- ====== HAPUS BUTTON DI TOPBAR (TAPI AMANIN FILEMENU) ======
+for _, obj in ipairs(topBar:GetChildren()) do
+	if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Parent ~= fileMenu then
+		obj:Destroy()
+	end
+end
+
 -- ====== HAPUS LAYOUT LAMA ======
 for _, v in ipairs(fileMenu:GetChildren()) do
-	if v:IsA("UIGridLayout") then
+	if v:IsA("UIGridLayout") or v:IsA("UIListLayout") then
 		v:Destroy()
 	end
 end
 
--- ====== LAYOUT NYAMPING RAPI ======
-local layout = Instance.new("UIListLayout")
-layout.FillDirection = Enum.FillDirection.Horizontal
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Padding = UDim.new(0, 5)
-layout.VerticalAlignment = Enum.VerticalAlignment.Center
-layout.Parent = fileMenu
+-- ====== GRID LAYOUT (KESAMPING OTOMATIS) ======
+local grid = Instance.new("UIGridLayout")
+grid.Parent = fileMenu
 
--- ====== RAPIN BUTTON DI FILEMENU (JANGAN DIHAPUS!) ======
+grid.CellSize = UDim2.new(0, 90, 0, 18)
+grid.CellPadding = UDim2.new(0, 5, 0, 3)
+
+grid.FillDirection = Enum.FillDirection.Horizontal
+grid.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- ====== RAPIKAN BUTTON FILEMENU ======
 for _, obj in ipairs(fileMenu:GetChildren()) do
 	if obj:IsA("TextButton") or obj:IsA("ImageButton") then
-		obj.Size = UDim2.new(0, 110, 0, 18)
+		obj.Size = UDim2.new(0, 90, 0, 18)
 		obj.BorderSizePixel = 0
+		obj.BackgroundTransparency = 0.2
 	end
 end
 
-print("[SAFE FIX] Button FileMenu aman, TopBar bersih, gak ada korban 😈")
-
+print("[FULL SC] FileMenu grid nyala, TopBar bersih, UI udah waras 😈")
 print("[FIX] TopBar clean + FileMenu locked visible + size fix 20 done 😈")
 print("[FileMenu] udah rapi nyamping, jangan berantakan lagi 😤")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
