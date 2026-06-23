@@ -823,14 +823,14 @@ local fileMenu = topBar:WaitForChild("FileMenu")
 -- ====== SET FILEMENU ======
 fileMenu.Parent = topBar
 fileMenu.Visible = true
-fileMenu.Size = UDim2.new(1, 0, 0, 20)
+fileMenu.Size = UDim2.new(0.566, 0, 0, 20)
 fileMenu.Position = UDim2.new(0, 0, 0, 0)
 
--- ====== BACKGROUND TRANSPARAN ======
+-- TRANSPARAN BG
 fileMenu.BackgroundTransparency = 1
 fileMenu.BorderSizePixel = 0
 
--- ====== ANTI HIDE ======
+-- ====== ANTI HIDE FILEMENU ======
 fileMenu:GetPropertyChangedSignal("Visible"):Connect(function()
 	fileMenu.Visible = true
 end)
@@ -841,21 +841,23 @@ task.spawn(function()
 	end
 end)
 
--- ====== HAPUS SEMUA BUTTON DI TOPBAR (TOTAL CLEAN) ======
-for _, obj in ipairs(topBar:GetDescendants()) do
-	if obj:IsA("TextButton") or obj:IsA("ImageButton") then
-		obj:Destroy()
+-- ====== HAPUS BUTTON DI TOPBAR (FILEMENU AMAN) ======
+for _, obj in ipairs(topBar:GetChildren()) do
+	if obj ~= fileMenu then
+		if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+			obj:Destroy()
+		end
 	end
 end
 
--- ====== HAPUS LAYOUT LAMA ======
+-- ====== HAPUS LAYOUT LAMA DI FILEMENU ======
 for _, v in ipairs(fileMenu:GetChildren()) do
 	if v:IsA("UIGridLayout") or v:IsA("UIListLayout") then
 		v:Destroy()
 	end
 end
 
--- ====== GRID ======
+-- ====== GRID LAYOUT ======
 local grid = Instance.new("UIGridLayout")
 grid.Parent = fileMenu
 
@@ -863,30 +865,37 @@ grid.CellSize = UDim2.new(0, 90, 0, 18)
 grid.CellPadding = UDim2.new(0, 4, 0, 3)
 grid.FillDirection = Enum.FillDirection.Horizontal
 grid.SortOrder = Enum.SortOrder.LayoutOrder
+grid.HorizontalAlignment = Enum.HorizontalAlignment.Left
+grid.VerticalAlignment = Enum.VerticalAlignment.Center
 
--- ====== CLEAN TEXT BUTTON (HAPUS "..." / FIX TEXT ANEH) ======
-local function cleanButton(obj)
+-- ====== CLEAN BUTTON FILEMENU ======
+local function clean(obj)
 	if obj:IsA("TextButton") then
 		obj.Text = string.gsub(obj.Text or "", "%.%.%.", "")
-		obj.TextTransparency = 0
-		obj.BackgroundTransparency = 0.2
-		obj.BorderSizePixel = 0
 		obj.Size = UDim2.new(0, 90, 0, 18)
+		obj.BorderSizePixel = 0
+		obj.BackgroundTransparency = 0.2
 	elseif obj:IsA("ImageButton") then
 		obj.BorderSizePixel = 0
 	end
 end
 
-for _, obj in ipairs(fileMenu:GetDescendants()) do
-	cleanButton(obj)
+for _, obj in ipairs(fileMenu:GetChildren()) do
+	clean(obj)
 end
 
 -- ====== AUTO FIX BUTTON BARU ======
-fileMenu.DescendantAdded:Connect(function(obj)
+fileMenu.ChildAdded:Connect(function(obj)
 	task.wait()
-	cleanButton(obj)
+	clean(obj)
 end)
 
+fileMenu.DescendantAdded:Connect(function(obj)
+	task.wait()
+	clean(obj)
+end)
+
+print("[FULL SC] TopBar clean, FileMenu aman, grid rapi, UI udah stabil 😈")
 print("[FINAL CLEAN] FileMenu transparan, TopBar bersih total, text udah gak ada '...' 😈")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
 print("[ThemeRecolor v8 - FINAL FIXED] 🔒 Tidak mengganggu ScreenGui lain")
