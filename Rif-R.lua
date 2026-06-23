@@ -895,6 +895,7 @@ fileMenu.DescendantAdded:Connect(function(obj)
 	clean(obj)
 end)
 
+-- == Fix Layout and resize, color and dll ==
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 
@@ -920,69 +921,106 @@ else
     -- PENGATURAN UTAMA FRAME (TAMPIL DI TENGAH LAYAR)
     -------------------------------------------------------------------------
     OpenSaveFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    OpenSaveFrame.Position = UDim2.new(0.5, 0, 0.5, 0) -- Mutlak di tengah screen
-    OpenSaveFrame.Size = UDim2.new(0, 360, 0, 480)       -- Ukuran proporsional mirip di gambar
-    OpenSaveFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15) -- Dark modern theme
+    OpenSaveFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    OpenSaveFrame.Size = UDim2.new(0, 380, 0, 500)       -- Sedikit diperlebar agar layout lega
+    OpenSaveFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     OpenSaveFrame.BorderSizePixel = 0
     
-    -- Menambahkan sudut membulat pada Frame Utama
     local mainCorner = OpenSaveFrame:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 10)
+    mainCorner.CornerRadius = UDim.new(0, 12)
     mainCorner.Parent = OpenSaveFrame
     
-    -- Menambahkan border neon biru tipis sesuai contoh gambar
     local mainStroke = OpenSaveFrame:FindFirstChildOfClass("UIStroke") or Instance.new("UIStroke")
-    mainStroke.Color = Color3.fromRGB(0, 140, 230) -- Biru aksen
+    mainStroke.Color = Color3.fromRGB(0, 140, 230)
     mainStroke.Thickness = 2
     mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     mainStroke.Parent = OpenSaveFrame
 
     -------------------------------------------------------------------------
-    -- TATA LAYOUT DI DALAM FRAME (OTOMATIS & RAPI)
+    -- TATA LAYOUT UTAMA CONTAINER LIST
     -------------------------------------------------------------------------
-    -- Mencari container list (jika list dibungkus ScrollingFrame/Frame lain)
-    -- Jika tidak ada container khusus, script akan otomatis menggunakan OpenSaveFrame langsung
     local ListContainer = OpenSaveFrame:FindFirstChild("SavedPlacesContainer") 
         or OpenSaveFrame:FindFirstChildOfClass("ScrollingFrame") 
         or OpenSaveFrame
 
-    -- Mengatur UIListLayout agar item otomatis tersusun rapi ke bawah
     local uiListLayout = ListContainer:FindFirstChildOfClass("UIListLayout") or Instance.new("UIListLayout")
     uiListLayout.FillDirection = Enum.FillDirection.Vertical
     uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    uiListLayout.Padding = UDim.new(0, 8) -- Jarak antar item kartu (saved places)
+    uiListLayout.Padding = UDim.new(0, 10) -- Jarak antar box tempat
     uiListLayout.Parent = ListContainer
 
-    -- Mengatur jarak margin (Padding) bagian dalam agar tidak menempel ke tepi frame
     local uiPadding = ListContainer:FindFirstChildOfClass("UIPadding") or Instance.new("UIPadding")
-    uiPadding.PaddingTop = UDim.new(0, 45)    -- Menyediakan space untuk Header atas (Open Place)
+    uiPadding.PaddingTop = UDim.new(0, 50) -- Memberi ruang untuk judul atas
     uiPadding.PaddingBottom = UDim.new(0, 15)
-    uiPadding.PaddingLeft = UDim.new(0, 12)
-    uiPadding.PaddingRight = UDim.new(0, 12)
+    uiPadding.PaddingLeft = UDim.new(0, 15)
+    uiPadding.PaddingRight = UDim.new(0, 15)
     uiPadding.Parent = ListContainer
 
     -------------------------------------------------------------------------
-    -- STYLING OTOMATIS UNTUK ITEM / LIST DI DALAMNYA
+    -- STYLING OTOMATIS DAN PENAMBAHAN NOMOR PADA SETIAP BOX
     -------------------------------------------------------------------------
-    -- Fungsi internal untuk menerapkan tema modern ke setiap baris tempat (Saved Places)
     local function styleListItems()
+        local indexCounter = 1 -- Counter untuk nomor urut otomatis jika teks nomor bawaan tidak ada
+        
         for _, item in ipairs(ListContainer:GetChildren()) do
-            -- Hanya mengubah objek berupa Frame (kartu tempat) & mengabaikan elemen layout
             if item:IsA("Frame") then
-                item.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Warna abu-abu gelap modern
-                item.Size = UDim2.new(1, 0, 0, 75) -- Lebar penuh mengikuti container, tinggi 75px
+                -- Atur dimensi Box utama
+                item.BackgroundColor3 = Color3.fromRGB(33, 33, 33)
                 item.BorderSizePixel = 0
                 
-                -- Sudut melengkung halus untuk tiap baris item
+                -- Jika box sedang terbuka ("Less..."), tingginya otomatis bertambah rapi
+                local isExpanded = item:FindFirstChild("Share") or item:FindFirstChild("Delete")
+                item.Size = UDim2.new(1, 0, 0, isExpanded and 110 or 75)
+                
                 local itemCorner = item:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-                itemCorner.CornerRadius = UDim.new(0, 8)
+                itemCorner.CornerRadius = UDim.new(0, 10)
                 itemCorner.Parent = item
                 
-                -- Merapikan Tombol "Open" (Warna Biru Cerah)
+                -- Memberikan padding internal di dalam box agar teks & tombol tidak menempel ke pinggir
+                local itemPadding = item:FindFirstChildOfClass("UIPadding") or Instance.new("UIPadding")
+                itemPadding.PaddingLeft = UDim.new(0, 12)
+                itemPadding.PaddingRight = UDim.new(0, 12)
+                itemPadding.PaddingTop = UDim.new(0, 10)
+                itemPadding.PaddingBottom = UDim.new(0, 10)
+                itemPadding.Parent = item
+
+                -----------------------------------------------------------------
+                -- SISTEM NOMOR BULAT (SEPERTI DI GAMBAR)
+                -----------------------------------------------------------------
+                -- Cari apakah sudah ada TextLabel nomor (misal nama defaultnya "Number" atau "Index")
+                local numberLabel = item:FindFirstChild("NumberLabel") or item:FindFirstChild("Index") or item:FindFirstChildOfClass("TextLabel")
+                
+                -- Jika tidak ada TextLabel sama sekali, kita buatkan lingkaran nomor otomatis
+                if not numberLabel then
+                    numberLabel = Instance.new("TextLabel")
+                    numberLabel.Name = "BoxNumberTag"
+                    numberLabel.Text = tostring(indexCounter)
+                    numberLabel.Parent = item
+                end
+                
+                -- Sesuai gambar: Lingkaran biru dengan text putih di tengah
+                numberLabel.Size = UDim2.new(0, 32, 0, 32)
+                numberLabel.BackgroundColor3 = Color3.fromRGB(0, 115, 210) -- Biru cerah cerlang
+                numberLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                numberLabel.Font = Enum.Font.SourceSansBold
+                numberLabel.TextSize = 16
+                numberLabel.BorderSizePixel = 0
+                
+                -- Membuat TextLabel menjadi bulat sempurna
+                local numCorner = numberLabel:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
+                numCorner.CornerRadius = UDim.new(1, 0)
+                numCorner.Parent = numberLabel
+                
+                -----------------------------------------------------------------
+                -- MERAPIKAN POSISI ELEMEN LAIN (TOMBOL & TEKS)
+                -----------------------------------------------------------------
+                -- Tombol Open Utama (Kanan)
                 local openButton = item:FindFirstChild("Open")
                 if openButton and openButton:IsA("TextButton") then
                     openButton.BackgroundColor3 = Color3.fromRGB(0, 115, 210)
                     openButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    openButton.Font = Enum.Font.SourceSansBold
+                    openButton.TextSize = 14
                     openButton.BorderSizePixel = 0
                     
                     local btnCorner = openButton:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
@@ -990,40 +1028,43 @@ else
                     btnCorner.Parent = openButton
                 end
 
-                -- Merapikan Tombol "Share" & "Delete" jika statusnya sedang 'Less...' (Terbuka)
-                -- Sesuai visual pada file Screenshot_20260623-090701.jpg
+                -- Tombol Share (Bawah saat diklik Less...)
                 local shareButton = item:FindFirstChild("Share")
                 if shareButton and shareButton:IsA("TextButton") then
-                    shareButton.BackgroundColor3 = Color3.fromRGB(0, 115, 210) -- Warna biru
+                    shareButton.BackgroundColor3 = Color3.fromRGB(0, 115, 210)
                     shareButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    shareButton.BorderSizePixel = 0
                     local btnCorner = shareButton:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
                     btnCorner.CornerRadius = UDim.new(0, 6)
                     btnCorner.Parent = shareButton
                 end
 
+                -- Tombol Delete (Bawah saat diklik Less...)
                 local deleteButton = item:FindFirstChild("Delete")
                 if deleteButton and deleteButton:IsA("TextButton") then
-                    deleteButton.BackgroundColor3 = Color3.fromRGB(210, 35, 35) -- Warna merah modern
+                    deleteButton.BackgroundColor3 = Color3.fromRGB(210, 35, 35)
                     deleteButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    deleteButton.BorderSizePixel = 0
                     local btnCorner = deleteButton:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
                     btnCorner.CornerRadius = UDim.new(0, 6)
                     btnCorner.Parent = deleteButton
                 end
+                
+                indexCounter = indexCounter + 1
             end
         end
     end
 
-    -- Jalankan styling pertama kali
+    -- Jalankan fungsi layouting
     styleListItems()
     
-    -- Menjaga agar layouting tetap rapi jika ada item baru yang ditambahkan secara dinamis saat game berjalan
+    -- Mengantisipasi item list baru masuk agar otomatis rapi & bernomor
     ListContainer.ChildAdded:Connect(function()
-        task.wait(0.05) -- Beri jeda instant agar instance ter-load sempurna
+        task.wait(0.05)
         styleListItems()
     end)
 end
 
-print("[FULL SC] TopBar clean, FileMenu aman, grid rapi, UI udah stabil 😈")
 print("[FINAL CLEAN] FileMenu transparan, TopBar bersih total, text udah gak ada '...' 😈")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
 print("[ThemeRecolor v8 - FINAL FIXED] 🔒 Tidak mengganggu ScreenGui lain")
