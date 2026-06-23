@@ -895,6 +895,134 @@ fileMenu.DescendantAdded:Connect(function(obj)
 	clean(obj)
 end)
 
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+
+-- 1. Menunggu PlayerGui dimuat sepenuhnya
+local playerGui = localPlayer:WaitForChild("PlayerGui")
+
+-- 2. Mencari OpenSaveFrame secara otomatis (Rekursif)
+local OpenSaveFrame = nil
+for _, child in ipairs(playerGui:GetDescendants()) do
+    if child:IsA("Frame") and child.Name == "OpenSaveFrame" then
+        OpenSaveFrame = child
+        break
+    end
+end
+
+-- 3. Eksekusi Perubahan Tampilan jika Frame Ditemukan
+if not OpenSaveFrame then
+    warn("OpenSaveFrame tidak ditemukan di dalam PlayerGui! Pastikan nama frame sudah benar.")
+else
+    print("OpenSaveFrame berhasil ditemukan: " .. OpenSaveFrame:GetFullName())
+    
+    -------------------------------------------------------------------------
+    -- PENGATURAN UTAMA FRAME (TAMPIL DI TENGAH LAYAR)
+    -------------------------------------------------------------------------
+    OpenSaveFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    OpenSaveFrame.Position = UDim2.new(0.5, 0, 0.5, 0) -- Mutlak di tengah screen
+    OpenSaveFrame.Size = UDim2.new(0, 360, 0, 480)       -- Ukuran proporsional mirip di gambar
+    OpenSaveFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15) -- Dark modern theme
+    OpenSaveFrame.BorderSizePixel = 0
+    
+    -- Menambahkan sudut membulat pada Frame Utama
+    local mainCorner = OpenSaveFrame:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 10)
+    mainCorner.Parent = OpenSaveFrame
+    
+    -- Menambahkan border neon biru tipis sesuai contoh gambar
+    local mainStroke = OpenSaveFrame:FindFirstChildOfClass("UIStroke") or Instance.new("UIStroke")
+    mainStroke.Color = Color3.fromRGB(0, 140, 230) -- Biru aksen
+    mainStroke.Thickness = 2
+    mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    mainStroke.Parent = OpenSaveFrame
+
+    -------------------------------------------------------------------------
+    -- TATA LAYOUT DI DALAM FRAME (OTOMATIS & RAPI)
+    -------------------------------------------------------------------------
+    -- Mencari container list (jika list dibungkus ScrollingFrame/Frame lain)
+    -- Jika tidak ada container khusus, script akan otomatis menggunakan OpenSaveFrame langsung
+    local ListContainer = OpenSaveFrame:FindFirstChild("SavedPlacesContainer") 
+        or OpenSaveFrame:FindFirstChildOfClass("ScrollingFrame") 
+        or OpenSaveFrame
+
+    -- Mengatur UIListLayout agar item otomatis tersusun rapi ke bawah
+    local uiListLayout = ListContainer:FindFirstChildOfClass("UIListLayout") or Instance.new("UIListLayout")
+    uiListLayout.FillDirection = Enum.FillDirection.Vertical
+    uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    uiListLayout.Padding = UDim.new(0, 8) -- Jarak antar item kartu (saved places)
+    uiListLayout.Parent = ListContainer
+
+    -- Mengatur jarak margin (Padding) bagian dalam agar tidak menempel ke tepi frame
+    local uiPadding = ListContainer:FindFirstChildOfClass("UIPadding") or Instance.new("UIPadding")
+    uiPadding.PaddingTop = UDim.new(0, 45)    -- Menyediakan space untuk Header atas (Open Place)
+    uiPadding.PaddingBottom = UDim.new(0, 15)
+    uiPadding.PaddingLeft = UDim.new(0, 12)
+    uiPadding.PaddingRight = UDim.new(0, 12)
+    uiPadding.Parent = ListContainer
+
+    -------------------------------------------------------------------------
+    -- STYLING OTOMATIS UNTUK ITEM / LIST DI DALAMNYA
+    -------------------------------------------------------------------------
+    -- Fungsi internal untuk menerapkan tema modern ke setiap baris tempat (Saved Places)
+    local function styleListItems()
+        for _, item in ipairs(ListContainer:GetChildren()) do
+            -- Hanya mengubah objek berupa Frame (kartu tempat) & mengabaikan elemen layout
+            if item:IsA("Frame") then
+                item.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Warna abu-abu gelap modern
+                item.Size = UDim2.new(1, 0, 0, 75) -- Lebar penuh mengikuti container, tinggi 75px
+                item.BorderSizePixel = 0
+                
+                -- Sudut melengkung halus untuk tiap baris item
+                local itemCorner = item:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
+                itemCorner.CornerRadius = UDim.new(0, 8)
+                itemCorner.Parent = item
+                
+                -- Merapikan Tombol "Open" (Warna Biru Cerah)
+                local openButton = item:FindFirstChild("Open")
+                if openButton and openButton:IsA("TextButton") then
+                    openButton.BackgroundColor3 = Color3.fromRGB(0, 115, 210)
+                    openButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    openButton.BorderSizePixel = 0
+                    
+                    local btnCorner = openButton:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
+                    btnCorner.CornerRadius = UDim.new(0, 6)
+                    btnCorner.Parent = openButton
+                end
+
+                -- Merapikan Tombol "Share" & "Delete" jika statusnya sedang 'Less...' (Terbuka)
+                -- Sesuai visual pada file Screenshot_20260623-090701.jpg
+                local shareButton = item:FindFirstChild("Share")
+                if shareButton and shareButton:IsA("TextButton") then
+                    shareButton.BackgroundColor3 = Color3.fromRGB(0, 115, 210) -- Warna biru
+                    shareButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    local btnCorner = shareButton:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
+                    btnCorner.CornerRadius = UDim.new(0, 6)
+                    btnCorner.Parent = shareButton
+                end
+
+                local deleteButton = item:FindFirstChild("Delete")
+                if deleteButton and deleteButton:IsA("TextButton") then
+                    deleteButton.BackgroundColor3 = Color3.fromRGB(210, 35, 35) -- Warna merah modern
+                    deleteButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    local btnCorner = deleteButton:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
+                    btnCorner.CornerRadius = UDim.new(0, 6)
+                    btnCorner.Parent = deleteButton
+                end
+            end
+        end
+    end
+
+    -- Jalankan styling pertama kali
+    styleListItems()
+    
+    -- Menjaga agar layouting tetap rapi jika ada item baru yang ditambahkan secara dinamis saat game berjalan
+    ListContainer.ChildAdded:Connect(function()
+        task.wait(0.05) -- Beri jeda instant agar instance ter-load sempurna
+        styleListItems()
+    end)
+end
+
 print("[FULL SC] TopBar clean, FileMenu aman, grid rapi, UI udah stabil 😈")
 print("[FINAL CLEAN] FileMenu transparan, TopBar bersih total, text udah gak ada '...' 😈")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
