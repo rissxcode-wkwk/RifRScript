@@ -1041,8 +1041,11 @@ local function manageTopBar()
 	print("\n[TopBar Manager] 🗑️  Menghapus button lama...")
 	deleteAllButtonsInTopBar()
 	
-	-- 4. BUAT 4 BUTTON BARU
-	print("\n[TopBar Manager] ✨ Membuat 4 button baru...")
+	-- 4. BUAT FILEMENU BARU
+local fileMenu = createFileMenu(topBar)
+
+-- 5. BUAT BUTTON BARU DI DALAM FILEMENU
+print("\n[TopBar Manager] ✨ Membuat 4 button baru...")
 	
 	local buttonConfigs = {
 		{
@@ -1068,7 +1071,7 @@ local function manageTopBar()
 	}
 	
 	for _, config in ipairs(buttonConfigs) do
-		createNewButton(topBar, config.name, config.position, config.frame)
+		createNewButton(fileMenu, config.name, config.position, config.frame)
 	end
 	
 	-- 5. REPORT SELESAI
@@ -1090,6 +1093,28 @@ end
 -- debugListButtons()
 
 -- ====== EKSEKUSI ======
+-- ====== BUAT FILEMENU BARU ======
+local function createFileMenu(topBar)
+	-- Hapus FileMenu lama
+	local oldFileMenu = topBar:FindFirstChild("FileMenu")
+	if oldFileMenu then
+		print("[TopBar Manager] Menghapus FileMenu lama")
+		oldFileMenu:Destroy()
+	end
+
+	-- Buat FileMenu baru
+	local fileMenu = Instance.new("Frame")
+	fileMenu.Name = "FileMenu"
+	fileMenu.Size = UDim2.new(1, 0, 1, 0)
+	fileMenu.Position = UDim2.new(0, 0, 0, 0)
+	fileMenu.BackgroundTransparency = 1
+	fileMenu.BorderSizePixel = 0
+	fileMenu.Parent = topBar
+
+	print("[TopBar Manager] ✓ FileMenu baru dibuat")
+
+	return fileMenu
+end
 manageTopBar()
 
 print("[TopBar Manager] 📝 Script execution completed. Check console for details.\n")
