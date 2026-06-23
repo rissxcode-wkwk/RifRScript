@@ -895,102 +895,89 @@ fileMenu.DescendantAdded:Connect(function(obj)
 	clean(obj)
 end)
 
--- == Fix Layout and resize, color and dll ==
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 
 -- 1. Menunggu PlayerGui dimuat sepenuhnya
 local playerGui = localPlayer:WaitForChild("PlayerGui")
 
--- 2. Mencari OpenSaveFrame secara otomatis (Rekursif)
-local OpenSaveFrame = nil
+-- 2. Mencari Frame bernama "Open" secara otomatis (Rekursif)
+local OpenFrame = nil
 for _, child in ipairs(playerGui:GetDescendants()) do
-    if child:IsA("Frame") and child.Name == "OpenSaveFrame" then
-        OpenSaveFrame = child
+    if child:IsA("Frame") and (child.Name == "Open" or child.Name == "OpenSaveFrame") then
+        OpenFrame = child
         break
     end
 end
 
--- 3. Eksekusi Perubahan Tampilan jika Frame Ditemukan
-if not OpenSaveFrame then
-    warn("OpenSaveFrame tidak ditemukan di dalam PlayerGui! Pastikan nama frame sudah benar.")
+if not OpenFrame then
+    warn("Frame 'Open' tidak ditemukan di dalam PlayerGui! Pastikan nama frame sudah sesuai.")
 else
-    print("OpenSaveFrame berhasil ditemukan: " .. OpenSaveFrame:GetFullName())
+    print("Frame berhasil ditemukan: " .. OpenFrame:GetFullName())
     
     -------------------------------------------------------------------------
     -- PENGATURAN UTAMA FRAME (TAMPIL DI TENGAH LAYAR)
     -------------------------------------------------------------------------
-    OpenSaveFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    OpenSaveFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    OpenSaveFrame.Size = UDim2.new(0, 380, 0, 500)       -- Sedikit diperlebar agar layout lega
-    OpenSaveFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    OpenSaveFrame.BorderSizePixel = 0
+    OpenFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    OpenFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    OpenFrame.Size = UDim2.new(0, 400, 0, 520) -- Ukuran ideal proporsional di tengah layar
+    OpenFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35) -- Warna latar belakang abu-abu gelap sesuai gambar
+    OpenFrame.BorderSizePixel = 0
     
-    local mainCorner = OpenSaveFrame:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 12)
-    mainCorner.Parent = OpenSaveFrame
+    local mainCorner = OpenFrame:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
+    mainCorner.CornerRadius = UDim.new(0, 10)
+    mainCorner.Parent = OpenFrame
     
-    local mainStroke = OpenSaveFrame:FindFirstChildOfClass("UIStroke") or Instance.new("UIStroke")
-    mainStroke.Color = Color3.fromRGB(0, 140, 230)
+    local mainStroke = OpenFrame:FindFirstChildOfClass("UIStroke") or Instance.new("UIStroke")
+    mainStroke.Color = Color3.fromRGB(0, 140, 230) -- Border biru luar frame
     mainStroke.Thickness = 2
     mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    mainStroke.Parent = OpenSaveFrame
+    mainStroke.Parent = OpenFrame
 
     -------------------------------------------------------------------------
-    -- TATA LAYOUT UTAMA CONTAINER LIST
+    -- LAYOUTING UTAMA CONTAINER TEMPAT (LIST SAVED PLACES)
     -------------------------------------------------------------------------
-    local ListContainer = OpenSaveFrame:FindFirstChild("SavedPlacesContainer") 
-        or OpenSaveFrame:FindFirstChildOfClass("ScrollingFrame") 
-        or OpenSaveFrame
+    local ListContainer = OpenFrame:FindFirstChild("SavedPlacesContainer") 
+        or OpenFrame:FindFirstChildOfClass("ScrollingFrame") 
+        or OpenFrame
 
     local uiListLayout = ListContainer:FindFirstChildOfClass("UIListLayout") or Instance.new("UIListLayout")
     uiListLayout.FillDirection = Enum.FillDirection.Vertical
     uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    uiListLayout.Padding = UDim.new(0, 10) -- Jarak antar box tempat
+    uiListLayout.Padding = UDim.new(0, 12) -- Jarak vertikal antar box item
     uiListLayout.Parent = ListContainer
 
     local uiPadding = ListContainer:FindFirstChildOfClass("UIPadding") or Instance.new("UIPadding")
-    uiPadding.PaddingTop = UDim.new(0, 50) -- Memberi ruang untuk judul atas
+    uiPadding.PaddingTop = UDim.new(0, 55) -- Jarak aman di bawah Judul "Open" atas
     uiPadding.PaddingBottom = UDim.new(0, 15)
     uiPadding.PaddingLeft = UDim.new(0, 15)
     uiPadding.PaddingRight = UDim.new(0, 15)
     uiPadding.Parent = ListContainer
 
     -------------------------------------------------------------------------
-    -- STYLING OTOMATIS DAN PENAMBAHAN NOMOR PADA SETIAP BOX
+    -- FIX STYLING & PENYELARASAN POSISI ELEMEN (NOMOR, TEKS, TOMBOL)
     -------------------------------------------------------------------------
     local function styleListItems()
-        local indexCounter = 1 -- Counter untuk nomor urut otomatis jika teks nomor bawaan tidak ada
+        local indexCounter = 1
         
         for _, item in ipairs(ListContainer:GetChildren()) do
             if item:IsA("Frame") then
-                -- Atur dimensi Box utama
-                item.BackgroundColor3 = Color3.fromRGB(33, 33, 33)
+                -- Atur Box Utama Item (Kartu Tempat)
+                item.BackgroundColor3 = Color3.fromRGB(45, 45, 45) -- Warna box sedikit lebih terang dari background utama
                 item.BorderSizePixel = 0
                 
-                -- Jika box sedang terbuka ("Less..."), tingginya otomatis bertambah rapi
+                -- Deteksi ekspansi tombol "Share/Delete" jika sedang terbuka
                 local isExpanded = item:FindFirstChild("Share") or item:FindFirstChild("Delete")
-                item.Size = UDim2.new(1, 0, 0, isExpanded and 110 or 75)
+                item.Size = UDim2.new(1, 0, 0, isExpanded and 115 or 80)
                 
                 local itemCorner = item:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-                itemCorner.CornerRadius = UDim.new(0, 10)
+                itemCorner.CornerRadius = UDim.new(0, 8)
                 itemCorner.Parent = item
-                
-                -- Memberikan padding internal di dalam box agar teks & tombol tidak menempel ke pinggir
-                local itemPadding = item:FindFirstChildOfClass("UIPadding") or Instance.new("UIPadding")
-                itemPadding.PaddingLeft = UDim.new(0, 12)
-                itemPadding.PaddingRight = UDim.new(0, 12)
-                itemPadding.PaddingTop = UDim.new(0, 10)
-                itemPadding.PaddingBottom = UDim.new(0, 10)
-                itemPadding.Parent = item
 
                 -----------------------------------------------------------------
-                -- SISTEM NOMOR BULAT (SEPERTI DI GAMBAR)
+                -- 1. PEMBUATAN & PENYELARASAN NOMOR BULAT (KIRI)
                 -----------------------------------------------------------------
-                -- Cari apakah sudah ada TextLabel nomor (misal nama defaultnya "Number" atau "Index")
-                local numberLabel = item:FindFirstChild("NumberLabel") or item:FindFirstChild("Index") or item:FindFirstChildOfClass("TextLabel")
-                
-                -- Jika tidak ada TextLabel sama sekali, kita buatkan lingkaran nomor otomatis
+                local numberLabel = item:FindFirstChild("BoxNumberTag") or item:FindFirstChild("NumberLabel") or item:FindFirstChild("Index")
                 if not numberLabel then
                     numberLabel = Instance.new("TextLabel")
                     numberLabel.Name = "BoxNumberTag"
@@ -998,26 +985,42 @@ else
                     numberLabel.Parent = item
                 end
                 
-                -- Sesuai gambar: Lingkaran biru dengan text putih di tengah
+                -- Kunci posisi nomor bulat di sebelah kiri kartu
+                numberLabel.Position = UDim2.new(0, 12, 0, 12)
                 numberLabel.Size = UDim2.new(0, 32, 0, 32)
-                numberLabel.BackgroundColor3 = Color3.fromRGB(0, 115, 210) -- Biru cerah cerlang
+                numberLabel.BackgroundColor3 = Color3.fromRGB(0, 115, 210) -- Biru lingkaran nomor
                 numberLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
                 numberLabel.Font = Enum.Font.SourceSansBold
                 numberLabel.TextSize = 16
                 numberLabel.BorderSizePixel = 0
                 
-                -- Membuat TextLabel menjadi bulat sempurna
                 local numCorner = numberLabel:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-                numCorner.CornerRadius = UDim.new(1, 0)
+                numCorner.CornerRadius = UDim.new(1, 0) -- Bulat sempurna
                 numCorner.Parent = numberLabel
-                
+
                 -----------------------------------------------------------------
-                -- MERAPIKAN POSISI ELEMEN LAIN (TOMBOL & TEKS)
+                -- 2. MENYELARASKAN POSISI TEKS JUDUL & UTAS INFO (TENGAH)
                 -----------------------------------------------------------------
-                -- Tombol Open Utama (Kanan)
-                local openButton = item:FindFirstChild("Open")
+                -- Cari TextLabel bawaan yang berisi nama tempat (contoh: yohoho, yo, bruno)
+                for _, textObj in ipairs(item:GetChildren()) do
+                    if textObj:IsA("TextLabel") and textObj ~= numberLabel then
+                        -- Geser posisi teks ke tengah (setelah lingkaran nomor bulat) agar tidak bertumpuk
+                        textObj.Position = UDim2.new(0, 55, textObj.Position.Y.Scale, textObj.Position.Y.Offset)
+                        textObj.TextXAlignment = Enum.TextXAlignment.Left
+                        textObj.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    end
+                end
+
+                -----------------------------------------------------------------
+                -- 3. MENGUNCI POSISI TOMBOL "OPEN" (KANAN)
+                -----------------------------------------------------------------
+                local openButton = item:FindFirstChild("Open") or item:FindFirstChildOfClass("TextButton")
                 if openButton and openButton:IsA("TextButton") then
-                    openButton.BackgroundColor3 = Color3.fromRGB(0, 115, 210)
+                    -- Kunci tombol Open mutlak menempel di sudut kanan box
+                    openButton.AnchorPoint = Vector2.new(1, 0.5)
+                    openButton.Position = UDim2.new(1, -12, 0, 28)
+                    openButton.Size = UDim2.new(0, 70, 0, 32)
+                    openButton.BackgroundColor3 = Color3.fromRGB(0, 115, 210) -- Warna tombol Open biru
                     openButton.TextColor3 = Color3.fromRGB(255, 255, 255)
                     openButton.Font = Enum.Font.SourceSansBold
                     openButton.TextSize = 14
@@ -1028,9 +1031,13 @@ else
                     btnCorner.Parent = openButton
                 end
 
-                -- Tombol Share (Bawah saat diklik Less...)
+                -----------------------------------------------------------------
+                -- 4. TOMBOL TAMBAHAN (SHARE & DELETE DI BAWAH JIKA ADA)
+                -----------------------------------------------------------------
                 local shareButton = item:FindFirstChild("Share")
                 if shareButton and shareButton:IsA("TextButton") then
+                    shareButton.Position = UDim2.new(0, 55, 0, 70)
+                    shareButton.Size = UDim2.new(0, 70, 0, 28)
                     shareButton.BackgroundColor3 = Color3.fromRGB(0, 115, 210)
                     shareButton.TextColor3 = Color3.fromRGB(255, 255, 255)
                     shareButton.BorderSizePixel = 0
@@ -1039,9 +1046,10 @@ else
                     btnCorner.Parent = shareButton
                 end
 
-                -- Tombol Delete (Bawah saat diklik Less...)
                 local deleteButton = item:FindFirstChild("Delete")
                 if deleteButton and deleteButton:IsA("TextButton") then
+                    deleteButton.Position = UDim2.new(0, 135, 0, 70)
+                    deleteButton.Size = UDim2.new(0, 70, 0, 28)
                     deleteButton.BackgroundColor3 = Color3.fromRGB(210, 35, 35)
                     deleteButton.TextColor3 = Color3.fromRGB(255, 255, 255)
                     deleteButton.BorderSizePixel = 0
@@ -1055,16 +1063,16 @@ else
         end
     end
 
-    -- Jalankan fungsi layouting
+    -- Jalankan penataan layout
     styleListItems()
     
-    -- Mengantisipasi item list baru masuk agar otomatis rapi & bernomor
+    -- Mengunci kerapian jika item list diperbarui secara real-time
     ListContainer.ChildAdded:Connect(function()
         task.wait(0.05)
         styleListItems()
     end)
 end
-
+ 
 print("[FINAL CLEAN] FileMenu transparan, TopBar bersih total, text udah gak ada '...' 😈")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
 print("[ThemeRecolor v8 - FINAL FIXED] 🔒 Tidak mengganggu ScreenGui lain")
