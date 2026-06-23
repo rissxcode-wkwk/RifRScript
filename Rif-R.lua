@@ -895,6 +895,157 @@ fileMenu.DescendantAdded:Connect(function(obj)
 	clean(obj)
 end)
 
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Membuat RemoteEvent otomatis di ReplicatedStorage jika belum ada
+local remoteEvent = ReplicatedStorage:FindFirstChild("RigChangeEvent")
+if not remoteEvent then
+	remoteEvent = Instance.new("RemoteEvent")
+	remoteEvent.Name = "RigChangeEvent"
+	remoteEvent.Parent = ReplicatedStorage
+end
+
+local mainBar = playerGui:FindFirstChild("MainBar", true)
+
+if mainBar then
+	local targetScreenGui = mainBar.Parent 
+	
+	if targetScreenGui and targetScreenGui:IsA("ScreenGui") then
+		
+		local oldBtn = mainBar:FindFirstChild("settingrigbtn", true)
+		if oldBtn then oldBtn:Destroy() end
+
+		local originalBtn = mainBar:FindFirstChild("partsel", true)
+
+		if originalBtn and originalBtn:IsA("GuiButton") then
+
+			local btn = originalBtn:Clone()
+			btn.Name = "settingrigbtn"
+			btn.Parent = mainBar
+			btn.Position = UDim2.new(0, 365, 0, 3)
+			btn.Text = "R6 / R15"
+
+			local oldPanel = targetScreenGui:FindFirstChild("RigPanel")
+			if oldPanel then oldPanel:Destroy() end
+
+			local panel = Instance.new("Frame")
+			panel.Name = "RigPanel"
+			panel.Parent = targetScreenGui
+			panel.Size = UDim2.new(0, 260, 0, 220)
+			panel.Position = UDim2.new(0.5, 0, 0.5, 0)
+			panel.AnchorPoint = Vector2.new(0.5, 0.5)
+			panel.BackgroundColor3 = Color3.fromRGB(25,25,25)
+			panel.BorderSizePixel = 0
+			panel.Visible = false
+
+			Instance.new("UICorner", panel).CornerRadius = UDim.new(0,10)
+
+			btn.MouseButton1Click:Connect(function()
+				panel.Visible = not panel.Visible
+			end)
+
+			local allToggles = {}
+
+			local function createToggle(y, title, desc, modeValue)
+				local holder = Instance.new("Frame")
+				holder.Parent = panel
+				holder.Size = UDim2.new(1, -20, 0, 55)
+				holder.Position = UDim2.new(0, 10, 0, y)
+				holder.BackgroundTransparency = 1
+
+				local t = Instance.new("TextLabel")
+				t.Parent = holder
+				t.Size = UDim2.new(1, 0, 0, 25)
+				t.BackgroundTransparency = 1
+				t.Text = title
+				t.TextColor3 = Color3.fromRGB(255,255,255)
+				t.TextXAlignment = Enum.TextXAlignment.Left
+				t.Font = Enum.Font.SourceSansBold
+				t.TextSize = 16
+
+				local d = Instance.new("TextLabel")
+				d.Parent = holder
+				d.Position = UDim2.new(0, 0, 0, 25)
+				d.Size = UDim2.new(1, 0, 0, 20)
+				d.BackgroundTransparency = 1
+				d.Text = desc
+				d.TextColor3 = Color3.fromRGB(180,180,180)
+				d.TextXAlignment = Enum.TextXAlignment.Left
+				d.Font = Enum.Font.SourceSans
+				d.TextSize = 13
+
+				local switch = Instance.new("TextButton")
+				switch.Parent = holder
+				switch.Size = UDim2.new(0, 40, 0, 20)
+				switch.Position = UDim2.new(1, -50, 0.5, -10)
+				switch.BackgroundColor3 = Color3.fromRGB(80,80,80)
+				switch.BorderSizePixel = 0
+				switch.Text = ""
+				switch.AutoButtonColor = false
+
+				Instance.new("UICorner", switch).CornerRadius = UDim.new(1,0)
+
+				local circle = Instance.new("Frame")
+				circle.Parent = switch
+				circle.Size = UDim2.new(0, 16, 0, 16)
+				circle.Position = UDim2.new(0, 2, 0.5, -8)
+				circle.BackgroundColor3 = Color3.fromRGB(255,255,255)
+				circle.BorderSizePixel = 0
+
+				Instance.new("UICorner", circle).CornerRadius = UDim.new(1,0)
+
+				local toggleData = {
+					Active = false,
+					Mode = modeValue,
+					UpdateVisual = function(self)
+						if self.Active then
+							switch.BackgroundColor3 = Color3.fromRGB(0,200,100)
+							circle:TweenPosition(UDim2.new(1,-18,0.5,-8),"Out","Quad",0.15,true)
+						else
+							switch.BackgroundColor3 = Color3.fromRGB(80,80,80)
+							circle:TweenPosition(UDim2.new(0,2,0.5,-8),"Out","Quad",0.15,true)
+						end
+					end
+				}
+				
+				table.insert(allToggles, toggleData)
+
+				switch.MouseButton1Click:Connect(function()
+					if toggleData.Active then
+						toggleData.Active = false
+						toggleData:UpdateVisual()
+						remoteEvent:FireServer("DEFAULT") -- Kembali ke settingan awal game jika dimatikan semua
+					else
+						for _, tog in ipairs(allToggles) do
+							tog.Active = false
+							tog:UpdateVisual()
+						end
+						toggleData.Active = true
+						toggleData:UpdateVisual()
+						
+						-- Mengirim mode pilihan ("R15", "R6", atau "RANDOM") ke Server
+						remoteEvent:FireServer(toggleData.Mode)
+					end
+				end)
+
+				-- Default awal: R15 menyala sejak awal
+				if modeValue == "R15" then
+					toggleData.Active = true
+				end
+				
+				toggleData:UpdateVisual()
+			end
+
+			-- ===== ISI PANEL (Menambahkan argumen parameter mode di ujung kanan) =====
+			createToggle(10,  "R15 CHAR", "Char akan menjadi R15", "R15")
+			createToggle(70,  "R6 CHAR", "Char akan menjadi R6", "R6")
+			createToggle(130, "R6 & R15 CHAR", "Random R6 / R15", "RANDOM")
+		end
+	end
+end
 
 print("[FINAL CLEAN] FileMenu transparan, TopBar bersih total, text udah gak ada '...' 😈")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
