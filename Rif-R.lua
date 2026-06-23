@@ -820,14 +820,13 @@ local THEME = {
 local topBar = studioGui:WaitForChild("TopBar")
 local fileMenu = topBar:WaitForChild("FileMenu")
 
--- ====== PASTIKAN POSISI ======
 fileMenu.Parent = topBar
 fileMenu.Visible = true
-fileMenu.Size = UDim2.new(0.566, 0, 0, 20)
+fileMenu.Size = UDim2.new(1, 0, 0, 20)
 fileMenu.Position = UDim2.new(0, 0, 0, 0)
 fileMenu.BorderSizePixel = 0
 
--- ====== ANTI HIDE SYSTEM ======
+-- ====== ANTI HIDE ======
 fileMenu:GetPropertyChangedSignal("Visible"):Connect(function()
 	fileMenu.Visible = true
 end)
@@ -838,13 +837,6 @@ task.spawn(function()
 	end
 end)
 
--- ====== HAPUS BUTTON DI TOPBAR (TAPI AMANIN FILEMENU) ======
-for _, obj in ipairs(topBar:GetChildren()) do
-	if (obj:IsA("TextButton") or obj:IsA("ImageButton")) and obj.Parent ~= fileMenu then
-		obj:Destroy()
-	end
-end
-
 -- ====== HAPUS LAYOUT LAMA ======
 for _, v in ipairs(fileMenu:GetChildren()) do
 	if v:IsA("UIGridLayout") or v:IsA("UIListLayout") then
@@ -852,27 +844,58 @@ for _, v in ipairs(fileMenu:GetChildren()) do
 	end
 end
 
--- ====== GRID LAYOUT (KESAMPING OTOMATIS) ======
+-- ====== GRID LAYOUT ======
 local grid = Instance.new("UIGridLayout")
 grid.Parent = fileMenu
 
 grid.CellSize = UDim2.new(0, 90, 0, 18)
-grid.CellPadding = UDim2.new(0, 5, 0, 3)
-
+grid.CellPadding = UDim2.new(0, 4, 0, 3)
 grid.FillDirection = Enum.FillDirection.Horizontal
 grid.SortOrder = Enum.SortOrder.LayoutOrder
 
--- ====== RAPIKAN BUTTON FILEMENU ======
-for _, obj in ipairs(fileMenu:GetChildren()) do
+-- ====== SET DEFAULT BUTTON ======
+local function setupButton(obj)
 	if obj:IsA("TextButton") or obj:IsA("ImageButton") then
 		obj.Size = UDim2.new(0, 90, 0, 18)
+		obj.Position = UDim2.new(0, 0, 0, 0)
 		obj.BorderSizePixel = 0
-		obj.BackgroundTransparency = 0.2
 	end
 end
 
-print("[FULL SC] FileMenu grid nyala, TopBar bersih, UI udah waras 😈")
-print("[FIX] TopBar clean + FileMenu locked visible + size fix 20 done 😈")
+for _, obj in ipairs(fileMenu:GetChildren()) do
+	setupButton(obj)
+end
+
+-- ====== LOCK SYSTEM (ANTI SCRIPT NGACO) ======
+local function lockUI()
+	fileMenu.Size = UDim2.new(0.566, 0, 0, 20)
+	fileMenu.Position = UDim2.new(0, 0, 0, 0)
+	fileMenu.Visible = true
+end
+
+fileMenu:GetPropertyChangedSignal("Size"):Connect(lockUI)
+fileMenu:GetPropertyChangedSignal("Position"):Connect(lockUI)
+fileMenu:GetPropertyChangedSignal("AnchorPoint"):Connect(lockUI)
+
+-- backup loop (kalau ada script nakal)
+task.spawn(function()
+	while task.wait(0.5) do
+		lockUI()
+	end
+end)
+
+-- ====== PROTECT BUTTON CHANGES ======
+fileMenu.ChildAdded:Connect(function(obj)
+	task.wait()
+	setupButton(obj)
+end)
+
+fileMenu.DescendantAdded:Connect(function(obj)
+	task.wait()
+	setupButton(obj)
+end)
+
+print("[LOCKED UI] FileMenu udah dikunci, script lain gak bisa ubah bentuk 😈")
 print("[FileMenu] udah rapi nyamping, jangan berantakan lagi 😤")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
 print("[ThemeRecolor v8 - FINAL FIXED] 🔒 Tidak mengganggu ScreenGui lain")
