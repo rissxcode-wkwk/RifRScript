@@ -821,29 +821,49 @@ local topBar = studioGui:WaitForChild("TopBar")
 local fileMenu = topBar:FindFirstChild("FileMenu")
 
 if not fileMenu then
-	warn("FileMenu gak ada, bikin dulu anjir 😑")
+	warn("FileMenu gak ada, bikin dulu 😑")
 	return
 end
 
--- ====== HAPUS SEMUA BUTTON DI TOPBAR ======
-for _, obj in ipairs(topBar:GetChildren()) do
+-- ====== FUNCTION FORCE VISIBILITY ======
+local function forceVisible()
+	fileMenu.Visible = true
+end
+
+-- anti script lain nge-hide
+fileMenu:GetPropertyChangedSignal("Visible"):Connect(function()
+	if fileMenu.Visible == false then
+		forceVisible()
+	end
+end)
+
+-- loop kecil biar bandel (backup anti-hidden)
+task.spawn(function()
+	while task.wait(0.5) do
+		if not fileMenu.Visible then
+			fileMenu.Visible = true
+		end
+	end
+end)
+
+-- ====== HAPUS SEMUA BUTTON DI TOPBAR (TOTAL CLEAN) ======
+for _, obj in ipairs(topBar:GetDescendants()) do
 	if obj:IsA("TextButton") or obj:IsA("ImageButton") then
 		obj:Destroy()
 	end
 end
 
--- ====== SET FILEMENU JADI ISI UTAMA TOPBAR ======
+-- ====== PASTIKAN FILEMENU DI TOPBAR ======
 fileMenu.Parent = topBar
-fileMenu.Visible = true
-fileMenu.BorderSizePixel = 0
 fileMenu.BackgroundTransparency = 0
+fileMenu.BorderSizePixel = 0
 
--- ikut ukuran TopBar full
-fileMenu.Size = UDim2.new(1, 0, 1, 0)
+-- SIZE FIX SESUAI MAU LU
+fileMenu.Size = UDim2.new(1, 0, 0, 20)
 fileMenu.Position = UDim2.new(0, 0, 0, 0)
-fileMenu.AnchorPoint = Vector2.new(0, 0)
+fileMenu.Visible = true
 
--- ====== BERSIHKAN LAYOUT LAMA ======
+-- ====== HAPUS LAYOUT LAMA ======
 for _, v in ipairs(fileMenu:GetChildren()) do
 	if v:IsA("UIGridLayout") or v:IsA("UIListLayout") then
 		v:Destroy()
@@ -854,22 +874,21 @@ end
 local layout = Instance.new("UIListLayout")
 layout.FillDirection = Enum.FillDirection.Horizontal
 layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Padding = UDim.new(0, 6)
+layout.Padding = UDim.new(0, 5)
 layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 layout.VerticalAlignment = Enum.VerticalAlignment.Center
 layout.Parent = fileMenu
 
--- ====== RAPIKAN BUTTON FILEMENU ======
-for _, btn in ipairs(fileMenu:GetChildren()) do
-	if btn:IsA("TextButton") or btn:IsA("ImageButton") then
-		btn.Size = UDim2.new(0, 130, 0, 40)
-		btn.BorderSizePixel = 0
-		btn.BackgroundTransparency = 0.2
+-- ====== RAPIN BUTTON DI DALAM FILEMENU ======
+for _, obj in ipairs(fileMenu:GetDescendants()) do
+	if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+		obj.Size = UDim2.new(0, 110, 0, 18)
+		obj.BorderSizePixel = 0
+		obj.BackgroundTransparency = 0.2
 	end
 end
 
-print("[TopBar] Button lama disingkirin, FileMenu takeover. udah clean 😈")
-
+print("[FIX] TopBar clean + FileMenu locked visible + size fix 20 done 😈")
 print("[FileMenu] udah rapi nyamping, jangan berantakan lagi 😤")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
 print("[ThemeRecolor v8 - FINAL FIXED] 🔒 Tidak mengganggu ScreenGui lain")
