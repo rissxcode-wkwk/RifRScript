@@ -818,54 +818,40 @@ local THEME = {
 
 -- ====== AMBIL TOPBAR & FILEMENU ======
 local topBar = studioGui:WaitForChild("TopBar")
-local fileMenu = topBar:FindFirstChild("FileMenu")
+local fileMenu = topBar:WaitForChild("FileMenu")
 
-if not fileMenu then
-	warn("FileMenu gak ada, bikin dulu 😑")
-	return
-end
-
--- ====== FUNCTION FORCE VISIBILITY ======
-local function forceVisible()
-	fileMenu.Visible = true
-end
-
--- anti script lain nge-hide
-fileMenu:GetPropertyChangedSignal("Visible"):Connect(function()
-	if fileMenu.Visible == false then
-		forceVisible()
-	end
-end)
-
--- loop kecil biar bandel (backup anti-hidden)
-task.spawn(function()
-	while task.wait(0.5) do
-		if not fileMenu.Visible then
-			fileMenu.Visible = true
-		end
-	end
-end)
-
--- ====== HAPUS SEMUA BUTTON DI TOPBAR (TOTAL CLEAN) ======
-for _, obj in ipairs(topBar:GetDescendants()) do
-	if obj:IsA("TextButton") or obj:IsA("ImageButton") then
-		obj:Destroy()
-	end
-end
-
--- ====== PASTIKAN FILEMENU DI TOPBAR ======
+-- ====== FORCE FILEMENU ======
 fileMenu.Parent = topBar
-fileMenu.BackgroundTransparency = 0
-fileMenu.BorderSizePixel = 0
-
--- SIZE FIX SESUAI MAU LU
+fileMenu.Visible = true
 fileMenu.Size = UDim2.new(1, 0, 0, 20)
 fileMenu.Position = UDim2.new(0, 0, 0, 0)
-fileMenu.Visible = true
+fileMenu.BorderSizePixel = 0
+
+-- ====== HAPUS BUTTON DI TOPBAR SAJA (BUKAN FILEMENU) ======
+for _, obj in ipairs(topBar:GetChildren()) do
+	if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+		-- jangan sentuh kalau dia punya parent FileMenu
+		if obj.Parent ~= fileMenu then
+			obj:Destroy()
+		end
+	end
+end
+
+-- ====== LOCK VISIBILITY BIAR GAK HILANG ======
+fileMenu:GetPropertyChangedSignal("Visible"):Connect(function()
+	fileMenu.Visible = true
+end)
+
+-- backup anti hide
+task.spawn(function()
+	while task.wait(0.5) do
+		fileMenu.Visible = true
+	end
+end)
 
 -- ====== HAPUS LAYOUT LAMA ======
 for _, v in ipairs(fileMenu:GetChildren()) do
-	if v:IsA("UIGridLayout") or v:IsA("UIListLayout") then
+	if v:IsA("UIGridLayout") then
 		v:Destroy()
 	end
 end
@@ -875,18 +861,18 @@ local layout = Instance.new("UIListLayout")
 layout.FillDirection = Enum.FillDirection.Horizontal
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Padding = UDim.new(0, 5)
-layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 layout.VerticalAlignment = Enum.VerticalAlignment.Center
 layout.Parent = fileMenu
 
--- ====== RAPIN BUTTON DI DALAM FILEMENU ======
-for _, obj in ipairs(fileMenu:GetDescendants()) do
+-- ====== RAPIN BUTTON DI FILEMENU (JANGAN DIHAPUS!) ======
+for _, obj in ipairs(fileMenu:GetChildren()) do
 	if obj:IsA("TextButton") or obj:IsA("ImageButton") then
 		obj.Size = UDim2.new(0, 110, 0, 18)
 		obj.BorderSizePixel = 0
-		obj.BackgroundTransparency = 0.2
 	end
 end
+
+print("[SAFE FIX] Button FileMenu aman, TopBar bersih, gak ada korban 😈")
 
 print("[FIX] TopBar clean + FileMenu locked visible + size fix 20 done 😈")
 print("[FileMenu] udah rapi nyamping, jangan berantakan lagi 😤")
