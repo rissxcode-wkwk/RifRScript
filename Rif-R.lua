@@ -816,7 +816,51 @@ local THEME = {
 	FrameColor       = Color3.fromRGB(46, 46, 46),
 }
 
+-- ====== AMBIL FRAME ======
+local topBar = studioGui:WaitForChild("TopBar")
+local fileMenu = topBar:FindFirstChild("FileMenu")
 
+if not fileMenu then
+	warn("FileMenu gak ketemu, tolol lu taro dimana 😑")
+	return
+end
+
+-- ====== SET FILEMENU VISUAL ======
+fileMenu.Visible = true
+fileMenu.BackgroundTransparency = 0
+fileMenu.BorderSizePixel = 0
+
+-- bikin nyamping ikut TopBar
+fileMenu.Size = UDim2.new(1, 0, 0, 50) -- lebar full TopBar, tinggi 50
+fileMenu.Position = UDim2.new(0, 0, 0, 0)
+fileMenu.AnchorPoint = Vector2.new(0, 0)
+
+-- ====== HAPUS LAYOUT LAMA ======
+for _, v in ipairs(fileMenu:GetChildren()) do
+	if v:IsA("UIGridLayout") or v:IsA("UIListLayout") then
+		v:Destroy()
+	end
+end
+
+-- ====== BUAT LAYOUT BARU (NYAMPING RAPI) ======
+local layout = Instance.new("UIListLayout")
+layout.FillDirection = Enum.FillDirection.Horizontal
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Padding = UDim.new(0, 6)
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+layout.VerticalAlignment = Enum.VerticalAlignment.Center
+layout.Parent = fileMenu
+
+-- ====== RAPIN BUTTON DI DALAM FILEMENU ======
+for _, btn in ipairs(fileMenu:GetChildren()) do
+	if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+		btn.Size = UDim2.new(0, 120, 0, 40)
+		btn.BackgroundTransparency = 0.2
+		btn.BorderSizePixel = 0
+	end
+end
+
+print("[FileMenu] udah rapi nyamping, jangan berantakan lagi 😤")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
 print("[ThemeRecolor v8 - FINAL FIXED] 🔒 Tidak mengganggu ScreenGui lain")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 Images: 14547804225, 84031887426375")
