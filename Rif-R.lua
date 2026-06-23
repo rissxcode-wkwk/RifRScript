@@ -816,33 +816,41 @@ local THEME = {
 	FrameColor       = Color3.fromRGB(46, 46, 46),
 }
 
--- ====== AMBIL FRAME ======
+-- ====== AMBIL TOPBAR & FILEMENU ======
 local topBar = studioGui:WaitForChild("TopBar")
 local fileMenu = topBar:FindFirstChild("FileMenu")
 
 if not fileMenu then
-	warn("FileMenu gak ketemu, tolol lu taro dimana 😑")
+	warn("FileMenu gak ada, bikin dulu anjir 😑")
 	return
 end
 
--- ====== SET FILEMENU VISUAL ======
-fileMenu.Visible = true
-fileMenu.BackgroundTransparency = 0
-fileMenu.BorderSizePixel = 0
+-- ====== HAPUS SEMUA BUTTON DI TOPBAR ======
+for _, obj in ipairs(topBar:GetChildren()) do
+	if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+		obj:Destroy()
+	end
+end
 
--- bikin nyamping ikut TopBar
-fileMenu.Size = UDim2.new(1, 0, 0, 50) -- lebar full TopBar, tinggi 50
+-- ====== SET FILEMENU JADI ISI UTAMA TOPBAR ======
+fileMenu.Parent = topBar
+fileMenu.Visible = true
+fileMenu.BorderSizePixel = 0
+fileMenu.BackgroundTransparency = 0
+
+-- ikut ukuran TopBar full
+fileMenu.Size = UDim2.new(1, 0, 1, 0)
 fileMenu.Position = UDim2.new(0, 0, 0, 0)
 fileMenu.AnchorPoint = Vector2.new(0, 0)
 
--- ====== HAPUS LAYOUT LAMA ======
+-- ====== BERSIHKAN LAYOUT LAMA ======
 for _, v in ipairs(fileMenu:GetChildren()) do
 	if v:IsA("UIGridLayout") or v:IsA("UIListLayout") then
 		v:Destroy()
 	end
 end
 
--- ====== BUAT LAYOUT BARU (NYAMPING RAPI) ======
+-- ====== LAYOUT NYAMPING RAPI ======
 local layout = Instance.new("UIListLayout")
 layout.FillDirection = Enum.FillDirection.Horizontal
 layout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -851,14 +859,16 @@ layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 layout.VerticalAlignment = Enum.VerticalAlignment.Center
 layout.Parent = fileMenu
 
--- ====== RAPIN BUTTON DI DALAM FILEMENU ======
+-- ====== RAPIKAN BUTTON FILEMENU ======
 for _, btn in ipairs(fileMenu:GetChildren()) do
 	if btn:IsA("TextButton") or btn:IsA("ImageButton") then
-		btn.Size = UDim2.new(0, 120, 0, 40)
-		btn.BackgroundTransparency = 0.2
+		btn.Size = UDim2.new(0, 130, 0, 40)
 		btn.BorderSizePixel = 0
+		btn.BackgroundTransparency = 0.2
 	end
 end
+
+print("[TopBar] Button lama disingkirin, FileMenu takeover. udah clean 😈")
 
 print("[FileMenu] udah rapi nyamping, jangan berantakan lagi 😤")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
