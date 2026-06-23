@@ -820,10 +820,14 @@ local THEME = {
 local topBar = studioGui:WaitForChild("TopBar")
 local fileMenu = topBar:WaitForChild("FileMenu")
 
+-- ====== SET FILEMENU ======
 fileMenu.Parent = topBar
 fileMenu.Visible = true
 fileMenu.Size = UDim2.new(1, 0, 0, 20)
 fileMenu.Position = UDim2.new(0, 0, 0, 0)
+
+-- ====== BACKGROUND TRANSPARAN ======
+fileMenu.BackgroundTransparency = 1
 fileMenu.BorderSizePixel = 0
 
 -- ====== ANTI HIDE ======
@@ -837,6 +841,13 @@ task.spawn(function()
 	end
 end)
 
+-- ====== HAPUS SEMUA BUTTON DI TOPBAR (TOTAL CLEAN) ======
+for _, obj in ipairs(topBar:GetDescendants()) do
+	if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+		obj:Destroy()
+	end
+end
+
 -- ====== HAPUS LAYOUT LAMA ======
 for _, v in ipairs(fileMenu:GetChildren()) do
 	if v:IsA("UIGridLayout") or v:IsA("UIListLayout") then
@@ -844,7 +855,7 @@ for _, v in ipairs(fileMenu:GetChildren()) do
 	end
 end
 
--- ====== GRID LAYOUT ======
+-- ====== GRID ======
 local grid = Instance.new("UIGridLayout")
 grid.Parent = fileMenu
 
@@ -853,50 +864,30 @@ grid.CellPadding = UDim2.new(0, 4, 0, 3)
 grid.FillDirection = Enum.FillDirection.Horizontal
 grid.SortOrder = Enum.SortOrder.LayoutOrder
 
--- ====== SET DEFAULT BUTTON ======
-local function setupButton(obj)
-	if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+-- ====== CLEAN TEXT BUTTON (HAPUS "..." / FIX TEXT ANEH) ======
+local function cleanButton(obj)
+	if obj:IsA("TextButton") then
+		obj.Text = string.gsub(obj.Text or "", "%.%.%.", "")
+		obj.TextTransparency = 0
+		obj.BackgroundTransparency = 0.2
+		obj.BorderSizePixel = 0
 		obj.Size = UDim2.new(0, 90, 0, 18)
-		obj.Position = UDim2.new(0, 0, 0, 0)
+	elseif obj:IsA("ImageButton") then
 		obj.BorderSizePixel = 0
 	end
 end
 
-for _, obj in ipairs(fileMenu:GetChildren()) do
-	setupButton(obj)
+for _, obj in ipairs(fileMenu:GetDescendants()) do
+	cleanButton(obj)
 end
 
--- ====== LOCK SYSTEM (ANTI SCRIPT NGACO) ======
-local function lockUI()
-	fileMenu.Size = UDim2.new(0.566, 0, 0, 20)
-	fileMenu.Position = UDim2.new(0, 0, 0, 0)
-	fileMenu.Visible = true
-end
-
-fileMenu:GetPropertyChangedSignal("Size"):Connect(lockUI)
-fileMenu:GetPropertyChangedSignal("Position"):Connect(lockUI)
-fileMenu:GetPropertyChangedSignal("AnchorPoint"):Connect(lockUI)
-
--- backup loop (kalau ada script nakal)
-task.spawn(function()
-	while task.wait(0.5) do
-		lockUI()
-	end
-end)
-
--- ====== PROTECT BUTTON CHANGES ======
-fileMenu.ChildAdded:Connect(function(obj)
-	task.wait()
-	setupButton(obj)
-end)
-
+-- ====== AUTO FIX BUTTON BARU ======
 fileMenu.DescendantAdded:Connect(function(obj)
 	task.wait()
-	setupButton(obj)
+	cleanButton(obj)
 end)
 
-print("[LOCKED UI] FileMenu udah dikunci, script lain gak bisa ubah bentuk 😈")
-print("[FileMenu] udah rapi nyamping, jangan berantakan lagi 😤")
+print("[FINAL CLEAN] FileMenu transparan, TopBar bersih total, text udah gak ada '...' 😈")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
 print("[ThemeRecolor v8 - FINAL FIXED] 🔒 Tidak mengganggu ScreenGui lain")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 Images: 14547804225, 84031887426375")
