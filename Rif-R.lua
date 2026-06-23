@@ -1037,84 +1037,79 @@ local function manageTopBar()
 		print("[TopBar Manager] ℹ️  Button 'Open/Save/Restore' akan tetap dibuat tapi tidak akan membuka frame")
 	end
 	
-	-- 3. HAPUS BUTTON LAMA
-	print("\n[TopBar Manager] 🗑️  Menghapus button lama...")
-	deleteAllButtonsInTopBar()
-	
-	-- 4. BUAT FILEMENU BARU
-local fileMenu = createFileMenu(topBar)
-
--- 5. BUAT BUTTON BARU DI DALAM FILEMENU
-print("\n[TopBar Manager] ✨ Membuat 4 button baru...")
-	
-	local buttonConfigs = {
-		{
-			name = "New",
-			position = UDim2.new(0, 0, 0, 0),
-			frame = dialogYesNoFrame,
-		},
-		{
-			name = "Open",
-			position = UDim2.new(0.07, 0, 0, 0),
-			frame = OpenSamplesMenu,
-		},
-		{
-			name = "Save",
-			position = UDim2.new(0.13, 0, 0, 0),
-			frame = SaveDetailsFrame,
-		},
-		{
-			name = "Restore",
-			position = UDim2.new(0.15, 0, 0, 0),
-			frame = openSaveFrame,
-		},
-	}
-	
-	for _, config in ipairs(buttonConfigs) do
-		createNewButton(fileMenu, config.name, config.position, config.frame)
-	end
-	
-	-- 5. REPORT SELESAI
-	print("\n" .. string.rep("=", 65))
-	print("[TopBar Manager] ✅ TOPBAR MANAGEMENT COMPLETED SUCCESSFULLY")
-	print(string.rep("=", 65))
-	print("\n[TopBar Manager] Summary:")
-	print("  ✓ TopBar ditemukan")
-	print("  ✓ " .. #buttonConfigs .. " button baru dibuat")
-	if dialogYesNoFrame then print("  ✓ DialogYesNoFrame linked") else print("  ⚠ DialogYesNoFrame not linked") end
-	if openSaveFrame then print("  ✓ OpenSaveFrame linked") else print("  ⚠ OpenSaveFrame not linked") end
-	print("\n")
-	
-	return true
+	-- HAPUS FILEMENU LAMA
+local oldFileMenu = topBar:FindFirstChild("FileMenu")
+if oldFileMenu then
+	oldFileMenu:Destroy()
+	print("[TopBar Manager] FileMenu lama dihapus")
 end
 
--- ====== UNCOMMENT UNTUK DEBUG ======
--- debugListFrames()
--- debugListButtons()
+-- BUAT FILEMENU BARU
+local fileMenu = Instance.new("Frame")
+fileMenu.Name = "FileMenu"
+fileMenu.Size = UDim2.new(0, 240, 1, 0)
+fileMenu.Position = UDim2.new(0, 0, 0, 0)
+fileMenu.BackgroundTransparency = 1
+fileMenu.BorderSizePixel = 0
+fileMenu.Parent = topBar
 
--- ====== EKSEKUSI ======
--- ====== BUAT FILEMENU BARU ======
-local function createFileMenu(topBar)
-	-- Hapus FileMenu lama
-	local oldFileMenu = topBar:FindFirstChild("FileMenu")
-	if oldFileMenu then
-		print("[TopBar Manager] Menghapus FileMenu lama")
-		oldFileMenu:Destroy()
-	end
+-- HAPUS BUTTON LAMA TOPBAR
+deleteAllButtonsInTopBar()
 
-	-- Buat FileMenu baru
-	local fileMenu = Instance.new("Frame")
-	fileMenu.Name = "FileMenu"
-	fileMenu.Size = UDim2.new(1, 0, 1, 0)
-	fileMenu.Position = UDim2.new(0, 0, 0, 0)
-	fileMenu.BackgroundTransparency = 1
-	fileMenu.BorderSizePixel = 0
-	fileMenu.Parent = topBar
+-- BUAT BUTTON DI DALAM FILEMENU
+local buttonConfigs = {
+	{
+		name = "New",
+		position = UDim2.new(0, 0, 0, 0),
+		frame = dialogYesNoFrame,
+	},
+	{
+		name = "Open",
+		position = UDim2.new(0, 57, 0, 0),
+		frame = OpenSamplesMenu,
+	},
+	{
+		name = "Save",
+		position = UDim2.new(0, 114, 0, 0),
+		frame = SaveDetailsFrame,
+	},
+	{
+		name = "Restore",
+		position = UDim2.new(0, 171, 0, 0),
+		frame = openSaveFrame,
+	},
+}
 
-	print("[TopBar Manager] ✓ FileMenu baru dibuat")
+for _, config in ipairs(buttonConfigs) do
+	local btn = Instance.new("TextButton")
+	btn.Name = config.name
+	btn.Size = UDim2.new(0, 57, 1, 0)
+	btn.Position = config.position
+	btn.BackgroundTransparency = 1
+	btn.BorderSizePixel = 0
+	btn.Text = config.name
+	btn.TextColor3 = THEME.TextColor
+	btn.TextSize = 14
+	btn.Font = Enum.Font.GothamMedium
+	btn.Parent = fileMenu
 
-	return fileMenu
+	btn.MouseEnter:Connect(function()
+		btn.BackgroundTransparency = 0.7
+		btn.BackgroundColor3 = THEME.TextButtonHover
+	end)
+
+	btn.MouseLeave:Connect(function()
+		btn.BackgroundTransparency = 1
+	end)
+
+	btn.MouseButton1Click:Connect(function()
+		if config.frame and config.frame.Parent then
+			config.frame.Visible = true
+		end
+	end)
 end
+
+print("[TopBar Manager] FileMenu baru berhasil dibuat")
 manageTopBar()
 
 print("[TopBar Manager] 📝 Script execution completed. Check console for details.\n")
