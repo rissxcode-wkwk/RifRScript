@@ -895,214 +895,114 @@ fileMenu.DescendantAdded:Connect(function(obj)
 	clean(obj)
 end)
 
-local Players = game:GetService("Players")
-local localPlayer = Players.LocalPlayer
+-- Script untuk styling OpenSaveFrame
+-- Bisa diletakkan di: ServerScriptService, StarterPlayer, atau lokasi lain
 
--- 1. Menunggu PlayerGui dimuat sepenuhnya
-local playerGui = localPlayer:WaitForChild("PlayerGui")
+local playerGui = game:GetService("Players"):FindFirstChild("Player") and game:GetService("Players"):FindFirstChild("Player"):WaitForChild("PlayerGui") or game:GetService("Players"):GetPlayers()[1]:WaitForChild("PlayerGui")
 
--- 2. Mencari Frame utama (Open/OpenSaveFrame) secara otomatis
-local MainFrame = nil
-for _, child in ipairs(playerGui:GetDescendants()) do
-    if child:IsA("Frame") and (child.Name == "Open" or child.Name == "OpenSaveFrame") then
-        MainFrame = child
-        break
-    end
-end
+-- Cari OpenSaveFrame
+local openSaveFrame = playerGui:WaitForChild("OpenSaveFrame")
 
-if not MainFrame then
-    warn("Frame utama tidak ditemukan di dalam PlayerGui! Pastikan nama frame luar sudah sesuai.")
-else
-    print("Frame utama berhasil ditemukan: " .. MainFrame:GetFullName())
-    
-    -------------------------------------------------------------------------
-    -- PENGATURAN UTAMA CONTAINER LUAR (CENTER SCREEN)
-    -------------------------------------------------------------------------
-    MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    MainFrame.Size = UDim2.new(0, 420, 0, 540) -- Ukuran proporsional di tengah layar
-    MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Dark theme modern
-    MainFrame.BorderSizePixel = 0
-    
-    local mainCorner = MainFrame:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 12)
-    mainCorner.Parent = MainFrame
-    
-    local mainStroke = MainFrame:FindFirstChildOfClass("UIStroke") or Instance.new("UIStroke")
-    mainStroke.Color = Color3.fromRGB(0, 140, 230) -- Border biru luar frame
-    mainStroke.Thickness = 2
-    mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-    mainStroke.Parent = MainFrame
+-- =======================
+-- STYLING FRAME UTAMA
+-- =======================
+openSaveFrame.Size = UDim2.new(0, 500, 0, 600)
+openSaveFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+openSaveFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+openSaveFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 48)
+openSaveFrame.BorderSizePixel = 0
+openSaveFrame.BackgroundTransparency = 0.05
 
-    -------------------------------------------------------------------------
-    -- MENCARI SCROLLINGFRAME TEMPAT BOX-BOX BERADA
-    -------------------------------------------------------------------------
-    local ScrollingFrame = MainFrame:FindFirstChild("ScrollingFrame") or MainFrame:FindFirstChildOfClass("ScrollingFrame")
-    
-    if ScrollingFrame then
-        -- Atur padding agar list tidak menempel ke tepi container utama
-        local uiPadding = ScrollingFrame:FindFirstChildOfClass("UIPadding") or Instance.new("UIPadding")
-        uiPadding.PaddingTop = UDim.new(0, 15)
-        uiPadding.PaddingBottom = UDim.new(0, 15)
-        uiPadding.PaddingLeft = UDim.new(0, 15)
-        uiPadding.PaddingRight = UDim.new(0, 15)
-        uiPadding.Parent = ScrollingFrame
+-- UICorner
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0, 12)
+frameCorner.Parent = openSaveFrame
 
-        -- Atur layout utama list item box agar berjejer rapi ke bawah
-        local uiListLayout = ScrollingFrame:FindFirstChildOfClass("UIListLayout") or Instance.new("UIListLayout")
-        uiListLayout.FillDirection = Enum.FillDirection.Vertical
-        uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        uiListLayout.Padding = UDim.new(0, 12) -- Jarak antar box tempat
-        uiListLayout.Parent = ScrollingFrame
+-- UIStroke
+local frameStroke = Instance.new("UIStroke")
+frameStroke.Color = Color3.fromRGB(100, 100, 100)
+frameStroke.Thickness = 1
+frameStroke.Transparency = 0.3
+frameStroke.Parent = openSaveFrame
 
-        -------------------------------------------------------------------------
-        -- STYLING DENGAN MENGIKUTI STRUKTUR SUB-FRAME ASLI (DEX++)
-        -------------------------------------------------------------------------
-        local function styleSavedPlaces()
-            local indexCounter = 1
+-- =======================
+-- LAYOUT INTERNAL
+-- =======================
+local listLayout = openSaveFrame:FindFirstChild("UIListLayout") or Instance.new("UIListLayout")
+listLayout.Parent = openSaveFrame
+listLayout.FillDirection = Enum.FillDirection.Vertical
+listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+listLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+listLayout.Padding = UDim.new(0, 15)
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- UIPadding
+local padding = openSaveFrame:FindFirstChild("UIPadding") or Instance.new("UIPadding")
+padding.Parent = openSaveFrame
+padding.PaddingTop = UDim.new(0, 20)
+padding.PaddingBottom = UDim.new(0, 20)
+padding.PaddingLeft = UDim.new(0, 20)
+padding.PaddingRight = UDim.new(0, 20)
+
+-- =======================
+-- STYLING CHILD ELEMENTS
+-- =======================
+for _, child in pairs(openSaveFrame:GetChildren()) do
+    if child.Name ~= "UIListLayout" and child.Name ~= "UIPadding" and child.Name ~= "UICorner" and child.Name ~= "UIStroke" then
+        
+        if child:IsA("Frame") or child:IsA("TextButton") then
+            child.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+            child.BorderSizePixel = 0
+            child.BackgroundTransparency = 0
             
-            for _, item in ipairs(ScrollingFrame:GetChildren()) do
-                -- Mengidentifikasi box-box tempat (seperti Game1, Game10, dll)
-                if item:IsA("Frame") and item.Name ~= "Template" then
-                    
-                    -- Tampilan utama Box latar belakang kartu
-                    item.BackgroundColor3 = Color3.fromRGB(42, 42, 42) -- Lebih terang dari background utama
-                    item.BorderSizePixel = 0
-                    
-                    -- Atur tinggi dinamis jika tombol share & delete terbuka (Frame4 aktif)
-                    local frame4 = item:FindFirstChild("Frame4")
-                    local isExpanded = frame4 and frame4.Visible == true
-                    item.Size = UDim2.new(1, 0, 0, isExpanded and 120 or 80)
-                    
-                    local itemCorner = item:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-                    itemCorner.CornerRadius = UDim.new(0, 8)
-                    itemCorner.Parent = item
-
-                    -----------------------------------------------------------------
-                    -- MENAMBAHKAN NOMOR BULAT BIRU DI SEBELAH KIRI
-                    -----------------------------------------------------------------
-                    local numberLabel = item:FindFirstChild("BoxNumberTag")
-                    if not numberLabel then
-                        numberLabel = Instance.new("TextLabel")
-                        numberLabel.Name = "BoxNumberTag"
-                        numberLabel.Parent = item
-                    end
-                    
-                    numberLabel.Text = tostring(indexCounter)
-                    numberLabel.Position = UDim2.new(0, 12, 0, 12)
-                    numberLabel.Size = UDim2.new(0, 32, 0, 32)
-                    numberLabel.BackgroundColor3 = Color3.fromRGB(0, 115, 210) -- Biru lingkaran nomor
-                    numberLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    numberLabel.Font = Enum.Font.SourceSansBold
-                    numberLabel.TextSize = 16
-                    numberLabel.BorderSizePixel = 0
-                    numberLabel.ZIndex = 5
-                    
-                    local numCorner = numberLabel:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-                    numCorner.CornerRadius = UDim.new(1, 0)
-                    numCorner.Parent = numberLabel
-
-                    -----------------------------------------------------------------
-                    -- NYETIL SUB-FRAME 1 (JUDUL: yohoho, yo, dll)
-                    -----------------------------------------------------------------
-                    local frame1 = item:FindFirstChild("Frame1")
-                    if frame1 then
-                        frame1.BackgroundTransparency = 1
-                        frame1.Position = UDim2.new(0, 55, 0, 10) -- Digeser ke kanan setelah lingkaran nomor
-                        
-                        local titleText = frame1:FindFirstChild("GameTitleTextLabel") or frame1:FindFirstChildOfClass("TextLabel")
-                        if titleText then
-                            titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-                            titleText.TextXAlignment = Enum.TextXAlignment.Left
-                            titleText.Font = Enum.Font.SourceSansSemiBold
-                        end
-                    end
-
-                    -----------------------------------------------------------------
-                    -- NYETIL SUB-FRAME 2 (TOMBOL OPEN UTAMA & MORE)
-                    -----------------------------------------------------------------
-                    local frame2 = item:FindFirstChild("Frame2")
-                    if frame2 then
-                        frame2.BackgroundTransparency = 1
-                        
-                        -- Tombol Open dikunci di ujung kanan box
-                        local openBtn = frame2:FindFirstChild("OpenSaveButton") or frame2:FindFirstChildOfClass("TextButton")
-                        if openBtn then
-                            openBtn.Size = UDim2.new(0, 70, 0, 30)
-                            openBtn.Position = UDim2.new(1, -82, 0, 12) -- Menempel rapi ke sisi kanan
-                            openBtn.BackgroundColor3 = Color3.fromRGB(0, 115, 210)
-                            openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-                            openBtn.Font = Enum.Font.SourceSansBold
-                            
-                            local btnCorner = openBtn:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-                            btnCorner.CornerRadius = UDim.new(0, 6)
-                            btnCorner.Parent = openBtn
-                        end
-                        
-                        -- Tombol More...
-                        local moreBtn = frame2:FindFirstChild("MoreButton")
-                        if moreBtn then
-                            moreBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
-                        end
-                    end
-
-                    -----------------------------------------------------------------
-                    -- NYETIL SUB-FRAME 3 (INFO WAKTU SAVE / DESKRIPSI)
-                    -----------------------------------------------------------------
-                    local frame3 = item:FindFirstChild("Frame3")
-                    if frame3 then
-                        frame3.BackgroundTransparency = 1
-                        frame3.Position = UDim2.new(0, 55, 0, 35) -- Sejajar di bawah judul teks
-                        
-                        local descText = frame3:FindFirstChild("DescriptionTextLabel")
-                        if descText then
-                            descText.TextColor3 = Color3.fromRGB(160, 160, 160)
-                            descText.TextXAlignment = Enum.TextXAlignment.Left
-                        end
-                    end
-
-                    -----------------------------------------------------------------
-                    -- NYETIL SUB-FRAME 4 (TOMBOL SHARE & DELETE JIKA AKTIF)
-                    -----------------------------------------------------------------
-                    if frame4 then
-                        frame4.BackgroundTransparency = 1
-                        frame4.Position = UDim2.new(0, 55, 0, 75) -- Berada di baris paling bawah saat ekspansi
-                        
-                        local deleteBtn = frame4:FindFirstChild("DeleteButton")
-                        if deleteBtn then
-                            deleteBtn.BackgroundColor3 = Color3.fromRGB(210, 35, 35) -- Merah modern
-                            deleteBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-                            local btnCorner = deleteBtn:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-                            btnCorner.CornerRadius = UDim.new(0, 6)
-                            btnCorner.Parent = deleteBtn
-                        end
-
-                        local shareBtn = frame4:FindFirstChild("ShareButton")
-                        if shareBtn then
-                            shareBtn.BackgroundColor3 = Color3.fromRGB(0, 115, 210) -- Biru modern
-                            shareBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-                            local btnCorner = shareBtn:FindFirstChildOfClass("UICorner") or Instance.new("UICorner")
-                            btnCorner.CornerRadius = UDim.new(0, 6)
-                            btnCorner.Parent = shareBtn
-                        end
-                    end
-                    
-                    indexCounter = indexCounter + 1
-                end
+            if not child:FindFirstChild("UICorner") then
+                local corner = Instance.new("UICorner")
+                corner.CornerRadius = UDim.new(0, 8)
+                corner.Parent = child
+            end
+            
+            if not child:FindFirstChild("UIStroke") then
+                local stroke = Instance.new("UIStroke")
+                stroke.Color = Color3.fromRGB(80, 80, 85)
+                stroke.Thickness = 0.5
+                stroke.Parent = child
             end
         end
-
-        -- Jalankan fungsi penataan layouting
-        styleSavedPlaces()
         
-        -- Mengotomatisasi kerapian jika item list baru ditambahkan secara dinamis
-        ScrollingFrame.ChildAdded:Connect(function()
-            task.wait(0.05)
-            styleSavedPlaces()
-        end)
+        if child:IsA("TextLabel") or child:IsA("TextButton") then
+            child.TextColor3 = Color3.fromRGB(240, 240, 240)
+            child.TextSize = 14
+            child.Font = Enum.Font.GothamMedium
+        end
+        
+        if child:IsA("Frame") or child:IsA("TextButton") then
+            if child.Size == UDim2.new(0, 0, 0, 0) then
+                child.Size = UDim2.new(1, -10, 0, 40)
+            end
+        end
     end
 end
- 
+
+-- =======================
+-- SHADOW EFFECT
+-- =======================
+local shadow = Instance.new("Frame")
+shadow.Name = "Shadow"
+shadow.Size = UDim2.new(1, 20, 1, 20)
+shadow.Position = UDim2.new(0, -10, 0, -10)
+shadow.BackgroundColor3 = Color3.new(0, 0, 0)
+shadow.BorderSizePixel = 0
+shadow.BackgroundTransparency = 0.7
+shadow.ZIndex = openSaveFrame.ZIndex - 1
+
+local shadowCorner = Instance.new("UICorner")
+shadowCorner.CornerRadius = UDim.new(0, 12)
+shadowCorner.Parent = shadow
+
+shadow.Parent = openSaveFrame
+
+print("✓ OpenSaveFrame styling applied!")
+                        
 print("[FINAL CLEAN] FileMenu transparan, TopBar bersih total, text udah gak ada '...' 😈")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
 print("[ThemeRecolor v8 - FINAL FIXED] 🔒 Tidak mengganggu ScreenGui lain")
