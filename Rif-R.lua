@@ -3,6 +3,7 @@
 ║           ThemeRecolor.lua v8 - MODIFIED & ENHANCED            ║
 ║                      Made By Redz                              ║
 ║                    Modified Version (FIXED)                    ║
+║              + PROTECTION FOR settingrigbtn BUTTON             ║
 ╚════════════════════════════════════════════════════════════════╝
 
 FITUR UTAMA:
@@ -11,6 +12,7 @@ FITUR UTAMA:
 ✅ Color Protection System - otomatis kembalikan warna jika ada script lain yang ubah
 ✅ Proteksi "Select MultiButton" (100% tidak diubah)
 ✅ Proteksi ColorPalette > Folder > Button (100% tidak diubah)
+✅ **BARU: Proteksi settingrigbtn Button (100% tidak diubah)**
 ✅ Real-time monitoring dengan PropertyChanged signal
 ✅ Dukungan DescendantAdded untuk UI baru
 ✅ Sistem red color exception tetap berjalan
@@ -84,6 +86,12 @@ end
 local function isSelectMultiButton(obj)
 	if not obj:IsA("GuiButton") then return false end
 	return obj.Name == "Select MultiButton" or obj.Name == "SelectMultiButton"
+end
+
+-- ====== FUNGSI CEK BUTTON settingrigbtn (PROTEKSI PENUH) ======
+local function isSettingRigButton(obj)
+	if not obj:IsA("GuiButton") then return false end
+	return obj.Name == "settingrigbtn" or obj.Name == "SettingRigBtn"
 end
 
 -- ====== FUNGSI CEK BUTTON DALAM FOLDER DI COLORPALETTE (ROBUST) ======
@@ -550,6 +558,11 @@ local function applyTheme(obj)
 		return
 	end
 
+	-- **BARU: SKIP settingrigbtn BUTTON (PENUH PROTEKSI)**
+	if isSettingRigButton(obj) then
+		return
+	end
+
 	-- SKIP BUTTON DALAM FOLDER DI COLORPALETTE
 	if isButtonInFolderInsideColorPalette(obj) then
 		return
@@ -713,6 +726,20 @@ studioGui.DescendantAdded:Connect(function(obj)
 	-- Pastikan object adalah child dari StudioGui
 	if not isInStudioGui(obj) then
 		return
+	end
+	
+	-- **BARU: Skip settingrigbtn dan anak-anaknya**
+	if isSettingRigButton(obj) then
+		return
+	end
+	
+	-- Check apakah parent adalah settingrigbtn
+	local parentCheck = obj.Parent
+	while parentCheck and parentCheck ~= studioGui do
+		if isSettingRigButton(parentCheck) then
+			return
+		end
+		parentCheck = parentCheck.Parent
 	end
 	
 	applyTheme(obj)
@@ -1050,6 +1077,7 @@ end
 print("[FINAL CLEAN] FileMenu transparan, TopBar bersih total, text udah gak ada '...' 😈")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 HANYA AFFECT STUDIOGUI")
 print("[ThemeRecolor v8 - FINAL FIXED] 🔒 Tidak mengganggu ScreenGui lain")
+print("[ThemeRecolor v8 - FINAL FIXED] 🔒 settingrigbtn TERLINDUNGI 100%")
 print("[ThemeRecolor v8 - FINAL FIXED] 🎨 Images: 14547804225, 84031887426375")
 print("[ThemeRecolor v8 - FINAL FIXED] 🔘 Button: PluginBtn @ (430, 3)")
 print("[ThemeRecolor v8 - FINAL FIXED] 🔄 Rotate Button dengan rotasi otomatis")
