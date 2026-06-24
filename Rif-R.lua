@@ -924,7 +924,7 @@ apiButton.Parent = topBar
 
 apiButton.Text = "API Place"
 apiButton.Size = UDim2.new(0, 90, 0, 18)
-apiButton.Position = UDim2.new(0.58, 0, 0, 1)
+apiButton.Position = UDim2.new(0, 0, 0, 1)
 
 apiButton.BackgroundTransparency = 0.2
 apiButton.BorderSizePixel = 0
@@ -941,7 +941,7 @@ apiFrame.Name = "APIPlaceFrame"
 apiFrame.Parent = studioGui
 
 apiFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-apiFrame.Position = UDim2.new(0.5, 0, 0.25, 0)
+apiFrame.Position = UDim2.new(0.5, 0, 0.35, 0)
 apiFrame.Size = UDim2.new(0, 350, 0, 220)
 
 apiFrame.BackgroundColor3 = Color3.fromRGB(35,35,35)
