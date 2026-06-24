@@ -925,10 +925,11 @@ end)
 
 local apiButton = Instance.new("TextButton")
 apiButton.Name = "APIPlaceButton"
-apiButton.Parent = topBar
+apiButton.Parent = fileMenu
 
 apiButton.Text = "API Place"
 apiButton.Size = UDim2.new(0, 90, 0, 18)
+
 apiButton.BackgroundTransparency = 0.2
 apiButton.BorderSizePixel = 0
 apiButton.TextSize = 14
@@ -939,17 +940,8 @@ local buttonCorner = Instance.new("UICorner")
 buttonCorner.CornerRadius = UDim.new(0,4)
 buttonCorner.Parent = apiButton
 
--- Posisi otomatis setelah FileMenu
-task.spawn(function()
-	while task.wait(0.1) do
-		apiButton.Position = UDim2.new(
-			0,
-			fileMenu.AbsolutePosition.X + fileMenu.AbsoluteSize.X + 8,
-			0,
-			1
-		)
-	end
-end)
+-- Taruh di paling akhir grid FileMenu
+apiButton.LayoutOrder = 9999
 
 -- ===================================================
 -- FRAME API PLACE
@@ -960,7 +952,7 @@ apiFrame.Name = "APIPlaceFrame"
 apiFrame.Parent = studioGui
 
 apiFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-apiFrame.Position = UDim2.new(0.5, 0, 0.4, 0)
+apiFrame.Position = UDim2.new(0.5, 0, 0.43, 0)
 
 -- Sedikit lebih besar
 apiFrame.Size = UDim2.new(0, 500, 0, 320)
