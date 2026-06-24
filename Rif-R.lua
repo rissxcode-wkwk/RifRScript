@@ -936,9 +936,29 @@ apiButton.TextSize = 14
 apiButton.Font = Enum.Font.SourceSans
 apiButton.TextColor3 = Color3.new(1,1,1)
 
-local buttonCorner = Instance.new("UICorner")
-buttonCorner.CornerRadius = UDim.new(0,4)
-buttonCorner.Parent = apiButton
+local function applyCorner(obj)
+	if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+		local corner = obj:FindFirstChildOfClass("UICorner")
+
+		if not corner then
+			corner = Instance.new("UICorner")
+			corner.Parent = obj
+		end
+
+		corner.CornerRadius = UDim.new(0, 4)
+	end
+end
+
+-- Button yang sudah ada
+for _, v in ipairs(fileMenu:GetDescendants()) do
+	applyCorner(v)
+end
+
+-- Button yang baru muncul
+fileMenu.DescendantAdded:Connect(function(v)
+	task.wait()
+	applyCorner(v)
+end)
 
 -- Taruh di paling akhir grid FileMenu
 apiButton.LayoutOrder = 9999
@@ -952,7 +972,7 @@ apiFrame.Name = "APIPlaceFrame"
 apiFrame.Parent = studioGui
 
 apiFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-apiFrame.Position = UDim2.new(0.5, 0, 0.43, 0)
+apiFrame.Position = UDim2.new(0.5, 0, 0.45, 0)
 
 -- Sedikit lebih besar
 apiFrame.Size = UDim2.new(0, 500, 0, 320)
