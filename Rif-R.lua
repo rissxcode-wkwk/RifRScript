@@ -922,6 +922,181 @@ fileMenu.DescendantAdded:Connect(function(obj)
 	clean(obj)
 end)
 
+-- OpenSaveFrame Modern Theme
+-- LocalScript
+
+local styledFrames = {}
+
+local function addCorner(obj, radius)
+local c = obj:FindFirstChildOfClass("UICorner")
+if not c then
+c = Instance.new("UICorner")
+c.Parent = obj
+end
+c.CornerRadius = UDim.new(0, radius or 10)
+end
+
+local function styleObject(obj)
+
+if obj:IsA("TextLabel") then
+	obj.BackgroundTransparency = 1
+	obj.TextColor3 = Color3.fromRGB(255,255,255)
+	obj.Font = Enum.Font.GothamBold
+
+elseif obj:IsA("TextButton") then
+	obj.BackgroundColor3 = Color3.fromRGB(0,170,255)
+	obj.TextColor3 = Color3.fromRGB(255,255,255)
+	obj.BorderSizePixel = 0
+	obj.AutoButtonColor = true
+	addCorner(obj, 12)
+
+elseif obj:IsA("ImageButton") then
+	obj.BackgroundColor3 = Color3.fromRGB(35,35,45)
+	obj.BorderSizePixel = 0
+	addCorner(obj, 12)
+
+elseif obj:IsA("TextBox") then
+	obj.BackgroundColor3 = Color3.fromRGB(40,40,50)
+	obj.TextColor3 = Color3.fromRGB(255,255,255)
+	obj.PlaceholderColor3 = Color3.fromRGB(180,180,180)
+	obj.BorderSizePixel = 0
+	addCorner(obj, 10)
+
+elseif obj:IsA("ScrollingFrame") then
+	obj.BackgroundColor3 = Color3.fromRGB(24,24,30)
+	obj.BorderSizePixel = 0
+	obj.ScrollBarThickness = 6
+
+elseif obj:IsA("Frame") then
+	if obj.Name ~= "OpenSaveFrame" then
+		obj.BackgroundColor3 = Color3.fromRGB(30,30,38)
+		obj.BorderSizePixel = 0
+		addCorner(obj, 10)
+	end
+end
+
+end
+
+local function applySpecialStyles(obj)
+
+if obj.Name == "DeleteButton" and obj:IsA("TextButton") then
+	obj.BackgroundColor3 = Color3.fromRGB(220,60,60)
+	obj.TextColor3 = Color3.fromRGB(255,255,255)
+	obj.BorderSizePixel = 0
+	addCorner(obj,12)
+
+elseif obj.Name == "ShareButton" and obj:IsA("TextButton") then
+	obj.BackgroundColor3 = Color3.fromRGB(140,90,255)
+	obj.TextColor3 = Color3.fromRGB(255,255,255)
+	obj.BorderSizePixel = 0
+	addCorner(obj,12)
+end
+
+end
+
+local function lockStyle(obj)
+
+task.spawn(function()
+
+	while obj and obj.Parent do
+
+		if obj.Name == "DeleteButton" and obj:IsA("TextButton") then
+			obj.BackgroundColor3 = Color3.fromRGB(220,60,60)
+			obj.TextColor3 = Color3.fromRGB(255,255,255)
+			obj.BorderSizePixel = 0
+
+		elseif obj.Name == "ShareButton" and obj:IsA("TextButton") then
+			obj.BackgroundColor3 = Color3.fromRGB(140,90,255)
+			obj.TextColor3 = Color3.fromRGB(255,255,255)
+			obj.BorderSizePixel = 0
+		end
+
+		task.wait(0.1)
+	end
+
+end)
+
+end
+
+local function styleOpenSaveFrame(frame)
+
+if styledFrames[frame] then
+	return
+end
+
+styledFrames[frame] = true
+
+frame.AnchorPoint = Vector2.new(0.5,0.5)
+frame.Position = UDim2.new(0.5,0,0.5,0)
+frame.Size = UDim2.new(0,295,0,300)
+
+frame.BackgroundColor3 = Color3.fromRGB(22,22,28)
+frame.BorderSizePixel = 0
+
+addCorner(frame,16)
+
+local stroke = frame:FindFirstChildOfClass("UIStroke")
+if not stroke then
+	stroke = Instance.new("UIStroke")
+	stroke.Parent = frame
+end
+
+stroke.Color = Color3.fromRGB(0,170,255)
+stroke.Thickness = 2
+
+for _,obj in ipairs(frame:GetDescendants()) do
+	styleObject(obj)
+	applySpecialStyles(obj)
+	lockStyle(obj)
+end
+
+frame.DescendantAdded:Connect(function(obj)
+
+	task.wait()
+
+	pcall(function()
+		styleObject(obj)
+		applySpecialStyles(obj)
+		lockStyle(obj)
+	end)
+
+end)
+
+task.spawn(function()
+
+	while frame.Parent do
+		frame.AnchorPoint = Vector2.new(0.5,0.5)
+		frame.Position = UDim2.new(0.5,0,0.5,0)
+		task.wait(0.25)
+	end
+
+end)
+
+print("[Theme] OpenSaveFrame ditemukan")
+
+end
+
+local function scan()
+
+for _,obj in ipairs(game:GetDescendants()) do
+	if obj:IsA("Frame") and obj.Name == "OpenSaveFrame" then
+		styleOpenSaveFrame(obj)
+	end
+end
+
+end
+
+scan()
+
+game.DescendantAdded:Connect(function(obj)
+
+if obj:IsA("Frame") and obj.Name == "OpenSaveFrame" then
+	task.wait(0.2)
+	styleOpenSaveFrame(obj)
+end
+
+end)
+
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
