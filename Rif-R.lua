@@ -920,7 +920,7 @@ end)
 
 local apiButton = Instance.new("TextButton")
 apiButton.Name = "APIPlaceButton"
-apiButton.Parent = topBar
+apiButton.Parent = FileMenu
 
 apiButton.Text = "API Place"
 apiButton.Size = UDim2.new(0, 90, 0, 18)
