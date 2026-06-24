@@ -853,7 +853,6 @@ fileMenu.Visible = true
 fileMenu.Size = UDim2.new(0.566, 0, 0, 20)
 fileMenu.Position = UDim2.new(0, 0, 0, 0)
 
--- TRANSPARAN BG
 fileMenu.BackgroundTransparency = 1
 fileMenu.BorderSizePixel = 0
 
@@ -877,17 +876,16 @@ for _, obj in ipairs(topBar:GetChildren()) do
 	end
 end
 
--- ====== HAPUS LAYOUT LAMA DI FILEMENU ======
+-- ====== HAPUS LAYOUT LAMA ======
 for _, v in ipairs(fileMenu:GetChildren()) do
 	if v:IsA("UIGridLayout") or v:IsA("UIListLayout") then
 		v:Destroy()
 	end
 end
 
--- ====== GRID LAYOUT ======
+-- ====== GRID FILEMENU ======
 local grid = Instance.new("UIGridLayout")
 grid.Parent = fileMenu
-
 grid.CellSize = UDim2.new(0, 90, 0, 18)
 grid.CellPadding = UDim2.new(0, 4, 0, 3)
 grid.FillDirection = Enum.FillDirection.Horizontal
@@ -895,7 +893,7 @@ grid.SortOrder = Enum.SortOrder.LayoutOrder
 grid.HorizontalAlignment = Enum.HorizontalAlignment.Left
 grid.VerticalAlignment = Enum.VerticalAlignment.Center
 
--- ====== CLEAN BUTTON FILEMENU ======
+-- ====== CLEAN BUTTON ======
 local function clean(obj)
 	if obj:IsA("TextButton") then
 		obj.Text = string.gsub(obj.Text or "", "%.%.%.", "")
@@ -911,15 +909,65 @@ for _, obj in ipairs(fileMenu:GetChildren()) do
 	clean(obj)
 end
 
--- ====== AUTO FIX BUTTON BARU ======
 fileMenu.ChildAdded:Connect(function(obj)
 	task.wait()
 	clean(obj)
 end)
 
-fileMenu.DescendantAdded:Connect(function(obj)
-	task.wait()
-	clean(obj)
+-- ===================================================
+-- BUTTON BARU : API PLACE
+-- ===================================================
+
+local apiButton = Instance.new("TextButton")
+apiButton.Name = "APIPlaceButton"
+apiButton.Parent = topBar
+
+apiButton.Text = "API Place"
+apiButton.Size = UDim2.new(0, 90, 0, 18)
+apiButton.Position = UDim2.new(0.58, 0, 0, 1)
+
+apiButton.BackgroundTransparency = 0.2
+apiButton.BorderSizePixel = 0
+apiButton.TextSize = 14
+apiButton.Font = Enum.Font.SourceSans
+apiButton.TextColor3 = Color3.new(1,1,1)
+
+-- ===================================================
+-- FRAME API PLACE
+-- ===================================================
+
+local apiFrame = Instance.new("Frame")
+apiFrame.Name = "APIPlaceFrame"
+apiFrame.Parent = studioGui
+
+apiFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+apiFrame.Position = UDim2.new(0.5, 0, 0.25, 0)
+apiFrame.Size = UDim2.new(0, 350, 0, 220)
+
+apiFrame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+apiFrame.BorderSizePixel = 0
+apiFrame.Visible = false
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0,8)
+corner.Parent = apiFrame
+
+-- TITLE
+local title = Instance.new("TextLabel")
+title.Parent = apiFrame
+title.Size = UDim2.new(1,0,0,28)
+title.BackgroundTransparency = 1
+title.Text = "API Place"
+title.Font = Enum.Font.SourceSansBold
+title.TextSize = 18
+title.TextColor3 = Color3.new(1,1,1)
+
+-- ===================================================
+-- TOGGLE FRAME
+-- ===================================================
+
+apiButton.MouseButton1Click:Connect(function()
+	apiFrame.Visible = not apiFrame.Visible
 end)
 
 -- OpenSaveFrame Modern Theme
