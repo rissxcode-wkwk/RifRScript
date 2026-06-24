@@ -914,23 +914,42 @@ fileMenu.ChildAdded:Connect(function(obj)
 	clean(obj)
 end)
 
+fileMenu.DescendantAdded:Connect(function(obj)
+	task.wait()
+	clean(obj)
+end)
+
 -- ===================================================
 -- BUTTON BARU : API PLACE
 -- ===================================================
 
 local apiButton = Instance.new("TextButton")
 apiButton.Name = "APIPlaceButton"
-apiButton.Parent = FileMenu
+apiButton.Parent = topBar
 
 apiButton.Text = "API Place"
 apiButton.Size = UDim2.new(0, 90, 0, 18)
-apiButton.Position = UDim2.new(0, 0, 0, 1)
-
 apiButton.BackgroundTransparency = 0.2
 apiButton.BorderSizePixel = 0
 apiButton.TextSize = 14
 apiButton.Font = Enum.Font.SourceSans
 apiButton.TextColor3 = Color3.new(1,1,1)
+
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0,4)
+buttonCorner.Parent = apiButton
+
+-- Posisi otomatis setelah FileMenu
+task.spawn(function()
+	while task.wait(0.1) do
+		apiButton.Position = UDim2.new(
+			0,
+			fileMenu.AbsolutePosition.X + fileMenu.AbsoluteSize.X + 8,
+			0,
+			1
+		)
+	end
+end)
 
 -- ===================================================
 -- FRAME API PLACE
@@ -941,8 +960,10 @@ apiFrame.Name = "APIPlaceFrame"
 apiFrame.Parent = studioGui
 
 apiFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-apiFrame.Position = UDim2.new(0.5, 0, 0.38, 0)
-apiFrame.Size = UDim2.new(0, 350, 0, 220)
+apiFrame.Position = UDim2.new(0.5, 0, 0.4, 0)
+
+-- Sedikit lebih besar
+apiFrame.Size = UDim2.new(0, 500, 0, 320)
 
 apiFrame.BackgroundColor3 = Color3.fromRGB(35,35,35)
 apiFrame.BorderSizePixel = 0
@@ -952,19 +973,19 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0,8)
 corner.Parent = apiFrame
 
--- TITLE
+-- ====== TITLE ======
+
 local title = Instance.new("TextLabel")
+title.Name = "Title"
 title.Parent = apiFrame
-title.Size = UDim2.new(1,0,0,28)
+title.Size = UDim2.new(1,0,0,30)
 title.BackgroundTransparency = 1
 title.Text = "API Place"
 title.Font = Enum.Font.SourceSansBold
-title.TextSize = 18
+title.TextSize = 20
 title.TextColor3 = Color3.new(1,1,1)
 
--- ===================================================
--- TOGGLE FRAME
--- ===================================================
+-- ====== TOGGLE FRAME ======
 
 apiButton.MouseButton1Click:Connect(function()
 	apiFrame.Visible = not apiFrame.Visible
