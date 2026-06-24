@@ -941,7 +941,7 @@ apiFrame.Name = "APIPlaceFrame"
 apiFrame.Parent = studioGui
 
 apiFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-apiFrame.Position = UDim2.new(0.5, 0, 0.35, 0)
+apiFrame.Position = UDim2.new(0.5, 0, 0.38, 0)
 apiFrame.Size = UDim2.new(0, 350, 0, 220)
 
 apiFrame.BackgroundColor3 = Color3.fromRGB(35,35,35)
