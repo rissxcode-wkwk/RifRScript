@@ -897,7 +897,7 @@ grid.VerticalAlignment = Enum.VerticalAlignment.Center
 local function clean(obj)
 	if obj:IsA("TextButton") then
 		obj.Text = string.gsub(obj.Text or "", "%.%.%.", "")
-		obj.Size = UDim2.new(0, 90, 0, 18)
+		obj.Size = UDim2.new(0, 40, 0, 18)
 		obj.BorderSizePixel = 0
 		obj.BackgroundTransparency = 0.2
 	elseif obj:IsA("ImageButton") then
